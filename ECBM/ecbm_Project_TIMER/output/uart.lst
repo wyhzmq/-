@@ -1,0 +1,594 @@
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\output\uart.obj
+COMPILER INVOKED BY: D:\Paths\Keil_v5\C51\BIN\C51.EXE ECBM_LIB\uart.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.
+                    -\device) DEBUG OBJECTEXTEND PRINT(.\output\uart.lst) OBJECT(.\output\uart.obj)
+
+line level    source
+
+   1          #include "ecbm_core.h"//Í³Ò»¼ÓÔØºËÐÄÍ·ÎÄ¼þ
+   2          #if ECBM_UART_LIB_EN  //¼ì²é±¾¿âÓÐÃ»ÓÐ±»Ê¹ÄÜ
+   3          /*--------------------------------------±äÁ¿¶¨Òå-----------------------------------*/
+   4          #if ECBM_UART1_EN
+   5          bit uart1_busy;
+   6              #if (ECBM_MCU == 0x310201)||(ECBM_MCU == 0x3102A1)
+   7                  u8 code uart1_io_map[3][2]={
+   8                      {D30,D31},
+   9                      {D32,D33},
+  10                      {D54,D55},
+  11                  };
+  12              #else
+                      u8 code uart1_io_map[4][2]={
+                          {D30,D31},
+                          {D36,D37},
+                          {D16,D17},
+                          {D43,D44},
+                      };
+                  #endif
+  20          #endif
+  21          #if ECBM_UART2_EN
+              bit uart2_busy;
+                  #if    ((ECBM_MCU&0xF00000)<=0x200000)
+                      u8 code uart2_io_map[2][2]={
+                          {D10,D11},
+                          {D40,D42},
+                      };
+                  #else
+                      u8 code uart2_io_map[2][2]={
+                          {D10,D11},
+                          {D46,D47},
+                      };        
+                  #endif
+              #endif
+  35          #if ECBM_UART3_EN
+              bit uart3_busy;
+              u8 code uart3_io_map[2][2]={
+                  {D00,D01},
+                  {D50,D51},
+              };
+              #endif
+  42          #if ECBM_UART4_EN
+              bit uart4_busy;
+              u8 code uart4_io_map[2][2]={
+                  {D02,D03},
+                  {D52,D53},
+              };
+              #endif
+  49          /*------------------------------------×ÊÔ´³åÍ»¾¯¸æ---------------------------------*/
+  50          //------------------------------------Ð£Ñé²¿·Ö¾¯¸æ---------------------------------//
+  51          #if ECBM_UART1_EN    ==    1
+  52          #if            (ECBM_UART1_PARITY!=0)                    //Èô´ò¿ªÁËÐ£Ñé£¬
+                  #if        ((ECBM_UART1_SCON_CONFIG&0x80)!=0x80)    //µ«ÊÇÃ»ÓÐÉèÖÃ³É9Î»Êý¾Ý¡£
+                  #error    ÈôÏë¿ªÆô´®¿Ú1µÄÐ£Ñé¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 2   
+
+                  #endif
+              #else                                                //ÈôÃ»ÓÐ´ò¿ªÐ£Ñé»òÕß¶à»úÍ¨ÐÅ£¬
+  57              #if        ((ECBM_UART1_SCON_CONFIG&0x80)==0x80)&&((ECBM_UART1_SCON_CONFIG&0x20)==0)    //È´ÉèÖÃ³ÉÁË9Î
+             -»Êý¾Ý¡£
+                  #warning    ´®¿Ú1µ±Ç°Ã»ÓÐ¿ªÆôÐ£Ñé»òÕß¶à»úÍ¨ÐÅ¹¦ÄÜ£¬ÇëÁôÒâÒ»ÏÂ¹¤×÷Ä£Ê½ÊÇ·ñÒ»¶¨ÉèÖÃÎª9Î»¡£
+                  #endif
+  60          #endif
+  61          #endif
+  62          
+  63          #if ECBM_UART2_EN    ==    1
+              #if            (ECBM_UART2_PARITY!=0)                    //Èô´ò¿ªÁËÐ£Ñé£¬
+                  #if        ((ECBM_UART2_S2CON_CONFIG&0x80)!=0x80)    //µ«ÊÇÃ»ÓÐÉèÖÃ³É9Î»Êý¾Ý¡£
+                  #error    ÈôÏë¿ªÆô´®¿Ú2µÄÐ£Ñé¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+                  #endif
+              #else                                                //ÈôÃ»ÓÐ´ò¿ªÐ£Ñé»òÕß¶à»úÍ¨ÐÅ£¬
+                  #if        ((ECBM_UART2_S2CON_CONFIG&0x80)==0x80)&&((ECBM_UART2_S2CON_CONFIG&0x20)==0)    //È´ÉèÖÃ³ÉÁË
+             -9Î»Êý¾Ý¡£
+                  #warning    ´®¿Ú2µ±Ç°Ã»ÓÐ¿ªÆôÐ£Ñé»òÕß¶à»úÍ¨ÐÅ¹¦ÄÜ£¬ÇëÁôÒâÒ»ÏÂ¹¤×÷Ä£Ê½ÊÇ·ñÒ»¶¨ÉèÖÃÎª9Î»¡£
+                  #endif
+              #endif
+              #endif
+  74          
+  75          #if ECBM_UART3_EN    ==    1
+              #if            (ECBM_UART3_PARITY!=0)                    //Èô´ò¿ªÁËÐ£Ñé£¬
+                  #if        ((ECBM_UART3_S3CON_CONFIG&0x80)!=0x80)    //µ«ÊÇÃ»ÓÐÉèÖÃ³É9Î»Êý¾Ý¡£
+                  #error    ÈôÏë¿ªÆô´®¿Ú3µÄÐ£Ñé¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+                  #endif
+              #else                                                //ÈôÃ»ÓÐ´ò¿ªÐ£Ñé»òÕß¶à»úÍ¨ÐÅ£¬
+                  #if        ((ECBM_UART3_S3CON_CONFIG&0x80)==0x80)&&((ECBM_UART3_S3CON_CONFIG&0x20)==0)    //È´ÉèÖÃ³ÉÁË
+             -9Î»Êý¾Ý¡£
+                  #warning    ´®¿Ú3µ±Ç°Ã»ÓÐ¿ªÆôÐ£Ñé»òÕß¶à»úÍ¨ÐÅ¹¦ÄÜ£¬ÇëÁôÒâÒ»ÏÂ¹¤×÷Ä£Ê½ÊÇ·ñÒ»¶¨ÉèÖÃÎª9Î»¡£
+                  #endif
+              #endif
+              #endif
+  86          
+  87          #if ECBM_UART4_EN    ==    1
+              #if            (ECBM_UART4_PARITY!=0)                    //Èô´ò¿ªÁËÐ£Ñé£¬
+                  #if        ((ECBM_UART4_S4CON_CONFIG&0x80)!=0x80)    //µ«ÊÇÃ»ÓÐÉèÖÃ³É9Î»Êý¾Ý¡£
+                  #error    ÈôÏë¿ªÆô´®¿Ú4µÄÐ£Ñé¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+                  #endif
+              #else                                                //ÈôÃ»ÓÐ´ò¿ªÐ£Ñé»òÕß¶à»úÍ¨ÐÅ£¬
+                  #if        ((ECBM_UART4_S4CON_CONFIG&0x80)==0x80)&&((ECBM_UART4_S4CON_CONFIG&0x20)==0)    //È´ÉèÖÃ³ÉÁË
+             -9Î»Êý¾Ý¡£
+                  #warning    ´®¿Ú4µ±Ç°Ã»ÓÐ¿ªÆôÐ£Ñé»òÕß¶à»úÍ¨ÐÅ¹¦ÄÜ£¬ÇëÁôÒâÒ»ÏÂ¹¤×÷Ä£Ê½ÊÇ·ñÒ»¶¨ÉèÖÃÎª9Î»¡£
+                  #endif
+              #endif
+              #endif
+  98          //----------------------------------¶à»úÍ¨ÐÅ²¿·Ö¾¯¸æ-------------------------------//
+  99          #if    (ECBM_UART1_SCON_CONFIG&0x20)&&((ECBM_UART1_SCON_CONFIG&0x80)==0)
+              #error Èô¿ªÆô´®¿Ú1µÄ¶à»úÍ¨ÐÅ¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+              #endif
+ 102          #if    (ECBM_UART2_S2CON_CONFIG&0x20)&&((ECBM_UART2_S2CON_CONFIG&0x80)==0)
+              #error Èô¿ªÆô´®¿Ú2µÄ¶à»úÍ¨ÐÅ¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+              #endif
+ 105          #if    (ECBM_UART3_S3CON_CONFIG&0x20)&&((ECBM_UART3_S3CON_CONFIG&0x80)==0)
+              #error Èô¿ªÆô´®¿Ú3µÄ¶à»úÍ¨ÐÅ¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+              #endif
+ 108          #if    (ECBM_UART4_S4CON_CONFIG&0x20)&&((ECBM_UART4_S4CON_CONFIG&0x80)==0)
+              #error Èô¿ªÆô´®¿Ú4µÄ¶à»úÍ¨ÐÅ¹¦ÄÜ£¬Çë°Ñ¹¤×÷Ä£Ê½ÉèÖÃÎª9Î»£¡
+              #endif
+ 111          //------------------------------------´®¿ÚÊýÁ¿¾¯¸æ---------------------------------//
+ 112          #if    (ECBM_UART2_EN == 1)&&((ECBM_MCU&0x00000F)<0x000002)
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 3   
+
+              #error µ±Ç°µ¥Æ¬»úÐÍºÅ²»Ö§³Ö´®¿Ú2£¬Çë¸ü»»ÐÍºÅ»òÕß¹Ø±Õ´®¿Ú2¡£
+              #endif
+ 115          #if    (ECBM_UART3_EN == 1)&&((ECBM_MCU&0x00000F)<0x000003)
+              #error µ±Ç°µ¥Æ¬»úÐÍºÅ²»Ö§³Ö´®¿Ú3£¬Çë¸ü»»ÐÍºÅ»òÕß¹Ø±Õ´®¿Ú3¡£
+              #endif
+ 118          #if    (ECBM_UART4_EN == 1)&&((ECBM_MCU&0x00000F)<0x000004)
+              #error µ±Ç°µ¥Æ¬»úÐÍºÅ²»Ö§³Ö´®¿Ú4£¬Çë¸ü»»ÐÍºÅ»òÕß¹Ø±Õ´®¿Ú4¡£
+              #endif
+ 121          //----------------------------------ºÍ¶¨Ê±Æ÷³åÍ»¾¯¸æ-------------------------------//
+ 122          #if    (ECBM_UART1_EN == 1)&&((ECBM_UART1_AUXR_CONFIG&0x01) == 0x01)&&(ECBM_UART2_EN == 1)
+              #if    ECBM_UART1_BAUD_RATE != ECBM_UART2_BAUD_RATE
+              #error ´®¿Ú1ºÍ´®¿Ú2µÄ²¨ÌØÂÊ²úÉúÆ÷£¨¶¨Ê±Æ÷2£©³åÍ»¡£Çë¸ü»»´®¿Ú1µÄ²¨ÌØÂÊ²úÉúÆ÷»òÕß½«´®¿Ú1ºÍ´®¿Ú2µÄ²¨ÌØÂÊµ÷³ÉÒ
+             -»ÖÂ¡£
+              #endif
+              #endif
+ 127          #if    (ECBM_UART1_EN == 1)&&((ECBM_UART1_AUXR_CONFIG&0x01) == 0x01)&&(ECBM_UART3_EN == 1)&&((ECBM_UART3_S
+             -3CON_CONFIG&0x40)==0x00)
+              #if    ECBM_UART1_BAUD_RATE != ECBM_UART3_BAUD_RATE
+              #error ´®¿Ú1ºÍ´®¿Ú3µÄ²¨ÌØÂÊ²úÉúÆ÷£¨¶¨Ê±Æ÷2£©³åÍ»¡£Çë¸ü»»´®¿Ú1»ò´®¿Ú3µÄ²¨ÌØÂÊ²úÉúÆ÷»òÕß½«´®¿Ú1ºÍ´®¿Ú3µÄ²¨ÌØ
+             -ÂÊµ÷³ÉÒ»ÖÂ¡£
+              #endif
+              #endif
+ 132          #if    (ECBM_UART1_EN == 1)&&((ECBM_UART1_AUXR_CONFIG&0x01) == 0x01)&&(ECBM_UART4_EN == 1)&&((ECBM_UART4_S
+             -4CON_CONFIG&0x40)==0x00)
+              #if    ECBM_UART1_BAUD_RATE != ECBM_UART4_BAUD_RATE
+              #error ´®¿Ú1ºÍ´®¿Ú4µÄ²¨ÌØÂÊ²úÉúÆ÷£¨¶¨Ê±Æ÷2£©³åÍ»¡£Çë¸ü»»´®¿Ú1»ò´®¿Ú4µÄ²¨ÌØÂÊ²úÉúÆ÷»òÕß½«´®¿Ú1ºÍ´®¿Ú4µÄ²¨ÌØ
+             -ÂÊµ÷³ÉÒ»ÖÂ¡£
+              #endif
+              #endif
+ 137          #if    (ECBM_UART2_EN == 1)&&(ECBM_UART3_EN == 1)&&((ECBM_UART3_S3CON_CONFIG&0x40)==0x00)
+              #if    ECBM_UART2_BAUD_RATE != ECBM_UART3_BAUD_RATE
+              #error ´®¿Ú2ºÍ´®¿Ú3µÄ²¨ÌØÂÊ²úÉúÆ÷£¨¶¨Ê±Æ÷2£©³åÍ»¡£Çë¸ü»»´®¿Ú3µÄ²¨ÌØÂÊ²úÉúÆ÷»òÕß½«´®¿Ú2ºÍ´®¿Ú3µÄ²¨ÌØÂÊµ÷³ÉÒ
+             -»ÖÂ¡£
+              #endif
+              #endif
+ 142          #if    (ECBM_UART2_EN == 1)&&(ECBM_UART4_EN == 1)&&((ECBM_UART4_S4CON_CONFIG&0x40)==0x00)
+              #if    ECBM_UART2_BAUD_RATE != ECBM_UART4_BAUD_RATE
+              #error ´®¿Ú2ºÍ´®¿Ú4µÄ²¨ÌØÂÊ²úÉúÆ÷£¨¶¨Ê±Æ÷2£©³åÍ»¡£Çë¸ü»»´®¿Ú4µÄ²¨ÌØÂÊ²úÉúÆ÷»òÕß½«´®¿Ú2ºÍ´®¿Ú4µÄ²¨ÌØÂÊµ÷³ÉÒ
+             -»ÖÂ¡£
+              #endif
+              #endif
+ 147          #if    (ECBM_UART3_EN == 1)&&((ECBM_UART3_S3CON_CONFIG&0x40)==0x00)&&(ECBM_UART4_EN == 1)&&((ECBM_UART4_S4
+             -CON_CONFIG&0x40)==0x00)
+              #if    ECBM_UART3_BAUD_RATE != ECBM_UART4_BAUD_RATE
+              #error ´®¿Ú3ºÍ´®¿Ú4µÄ²¨ÌØÂÊ²úÉúÆ÷£¨¶¨Ê±Æ÷2£©³åÍ»¡£Çë¸ü»»´®¿Ú3»ò´®¿Ú4µÄ²¨ÌØÂÊ²úÉúÆ÷»òÕß½«´®¿Ú3ºÍ´®¿Ú4µÄ²¨ÌØ
+             -ÂÊµ÷³ÉÒ»ÖÂ¡£
+              #endif
+              #endif
+ 152          
+ 153          
+ 154          
+ 155          #if     (ECBM_STREAM_EN == 1)
+              #   if  (ECBM_STREAM_UART == 1)&&(ECBM_UART1_EN == 0)
+              #       error  ´®¿Ú1µÄÊ¹ÄÜÃ»ÓÐ´ò¿ª£¬²»ÄÜ°ÑSTREAM°²×°µ½´®¿Ú1£¡
+              #   endif
+              #   if (ECBM_STREAM_UART == 2)&&(ECBM_UART2_EN == 0)
+              #       error  ´®¿Ú2µÄÊ¹ÄÜÃ»ÓÐ´ò¿ª£¬²»ÄÜ°ÑSTREAM°²×°µ½´®¿Ú2£¡
+              #   endif
+              #   if (ECBM_STREAM_UART == 3)&&(ECBM_UART3_EN == 0)
+              #       error  ´®¿Ú3µÄÊ¹ÄÜÃ»ÓÐ´ò¿ª£¬²»ÄÜ°ÑSTREAM°²×°µ½´®¿Ú3£¡
+              #   endif
+              #   if (ECBM_STREAM_UART == 4)&&(ECBM_UART4_EN == 0)
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 4   
+
+              #       error  ´®¿Ú4µÄÊ¹ÄÜÃ»ÓÐ´ò¿ª£¬²»ÄÜ°ÑSTREAM°²×°µ½´®¿Ú4£¡
+              #   endif
+              #endif
+ 169          
+ 170          
+ 171          /*--------------------------------------³ÌÐò¶¨Òå-----------------------------------*/
+ 172          /*-------------------------------------------------------
+ 173          ´®¿Ú³õÊ¼»¯º¯Êý¡£
+ 174          -------------------------------------------------------*/
+ 175          void uart_init(void){
+ 176   1      #if ECBM_UART1_EN == 1    //µ±´®¿Ú1¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+ 177   1          UART1_SET_REG_SCON  (ECBM_UART1_SCON_CONFIG);   //Ð´ÈëSCONÅäÖÃ£¬°üº¬¹¤×÷Ä£Ê½¡¢½ÓÊÕÊ¹ÄÜ¡¢¶à»úÍ¨ÐÅµÄÑ¡Ïî
+             -¡£
+ 178   1          UART1_SET_REG_PCON  (ECBM_UART1_PCON_CONFIG);   //Ð´ÈëPCONÅäÖÃ£¬°üº¬²¨ÌØÂÊ¼Ó±¶¡£
+ 179   1          UART1_SET_REG_AUXR  (ECBM_UART1_AUXR_CONFIG);   //Ð´ÈëAUXRÅäÖÃ£¬°üº¬¼Ó±¶¿ØÖÆ¡¢²¨ÌØÂÊ·¢ÉúÆ÷Ñ¡Ôñ¡£
+ 180   1          uart_set_io         (1,ECBM_UART1_IO);          //Ð´ÈëIOÑ¡Ôñ¿ØÖÆÎ»¡£
+ 181   1          uart_set_baud       (1,ECBM_UART1_BAUD_RATE);   //ÉèÖÃ²¨ÌØÂÊ¡£
+ 182   1          #if (ECBM_UART1_SCON_CONFIG&0x20)               //Èç¹û´ò¿ªÁË¶à»úÍ¨ÐÅ¹¦ÄÜ£¬
+                  UART1_SET_REG_SADDR (ECBM_UART1_SADDR_CONFIG);  //Ð´Èë´Ó»úµØÖ·¡£
+                  UART1_SET_REG_SADEN (ECBM_UART1_SADEN_CONFIG);  //Ð´Èë´Ó»úµØÖ·Ê¹ÄÜÎ»¡£
+                  #endif
+ 186   1          #if (ECBM_UART1_AUXR_CONFIG&0x01) == 0            //Èç¹ûÑ¡ÔñÁË¶¨Ê±Æ÷1£¬
+ 187   1          TIMER1_SET_MODE_1T;     //Éè¶¨¶¨Ê±Æ÷1Îª1TÄ£Ê½£¬
+ 188   1          TIMER1_SET_REG_TMOD(0); //Éè¶¨¶¨Ê±Æ÷1Îª16Î»×Ô¶¯ÖØ×°·½Ê½£¬Ä¿Ç°ÕâÑùÉèÖÃÒÑ¾­ÄÜÂú×ã³£ÓÃµÄ²¨ÌØÂÊÁË¡£
+ 189   1          TIMER1_IT_DISABLE;      //½ûÖ¹¶¨Ê±Æ÷1ÖÐ¶Ï¡£
+ 190   1          TIMER1_POWER_ON;        //Æô¶¯¶¨Ê±Æ÷1¡£
+ 191   1          #else                   //Èç¹ûÑ¡ÔñÁË¶¨Ê±Æ÷2£¬
+                  TIMER2_SET_MODE_1T;     //Éè¶¨¶¨Ê±Æ÷2Îª1TÄ£Ê½¡£
+                  TIMER2_IT_DISABLE;      //½ûÖ¹¶¨Ê±Æ÷2ÖÐ¶Ï¡£
+                  TIMER2_POWER_ON;        //Æô¶¯¶¨Ê±Æ÷2¡£
+                  #endif
+ 196   1          uart1_busy=0;           //´®¿Ú1Ã¦±êÖ¾Î»Çå0¡£
+ 197   1          UART1_IT_ENABLE;        //´ò¿ª´®¿Ú1ÖÐ¶Ï¡£
+ 198   1      #endif
+ 199   1      
+ 200   1      #if ECBM_UART2_EN == 1   //µ±´®¿Ú2¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+                  UART2_SET_REG_S2CON (ECBM_UART2_S2CON_CONFIG);  //Ð´ÈëS2CONÅäÖÃ,°üº¬ÁËÍ¨ÐÅÎ»Êý¡¢½ÓÊÕÔÊÐí¡¢¶à»úÍ¨ÐÅ¡£
+                  uart_set_io         (2,ECBM_UART2_IO);          //Ð´ÈëIOÑ¡Ôñ¿ØÖÆÎ»¡£
+                  uart_set_baud       (2,ECBM_UART2_BAUD_RATE);   //ÉèÖÃ²¨ÌØÂÊ¡£
+                  TIMER2_SET_MODE_1T; //¶¨Ê±Æ÷2Ê±ÖÓÎªFosc,¼´1T¡£
+                  TIMER2_IT_DISABLE;  //½ûÖ¹¶¨Ê±Æ÷2ÖÐ¶Ï¡£
+                  TIMER2_POWER_ON;    //Æô¶¯¶¨Ê±Æ÷2¡£
+                  uart2_busy=0;       //´®¿Ú2Ã¦±êÖ¾Î»Çå0¡£
+                  UART2_IT_ENABLE;    //´ò¿ª´®¿Ú2ÖÐ¶Ï¡£
+              #endif
+ 210   1          
+ 211   1      #if ECBM_UART3_EN == 1   //µ±´®¿Ú3¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+                  UART3_SET_REG_S3CON (ECBM_UART3_S3CON_CONFIG);  //Ð´ÈëS3CONÅäÖÃ,°üº¬ÁËÍ¨ÐÅÎ»Êý¡¢½ÓÊÕÔÊÐí¡¢¶à»úÍ¨ÐÅ¡¢²¨
+             -ÌØÂÊ²úÉúÆ÷Ñ¡Ôñ¡£
+                  uart_set_io         (3,ECBM_UART3_IO);          //Ð´ÈëIOÑ¡Ôñ¿ØÖÆÎ»¡£
+                  uart_set_baud       (3,ECBM_UART3_BAUD_RATE);   //ÉèÖÃ²¨ÌØÂÊ¡£
+                  #if (ECBM_UART3_S3CON_CONFIG&0x40)==0
+                  TIMER2_SET_MODE_1T; //¶¨Ê±Æ÷2Ê±ÖÓÎªFosc,¼´1T¡£
+                  TIMER2_IT_DISABLE;  //½ûÖ¹¶¨Ê±Æ÷2ÖÐ¶Ï¡£
+                  TIMER2_POWER_ON;    //Æô¶¯¶¨Ê±Æ÷2¡£
+                  #else
+                  TIMER3_SET_MODE_1T; //¶¨Ê±Æ÷3Ê±ÖÓÎªFosc,¼´1T¡£
+                  TIMER3_IT_DISABLE;  //½ûÖ¹¶¨Ê±Æ÷3ÖÐ¶Ï¡£
+                  TIMER3_POWER_ON;    //Æô¶¯¶¨Ê±Æ÷3¡£
+                  #endif
+                  uart3_busy=0;       //´®¿Ú3Ã¦±êÖ¾Î»Çå0¡£
+                  UART3_IT_ENABLE;    //´ò¿ª´®¿Ú3ÖÐ¶Ï¡£
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 5   
+
+              #endif
+ 227   1          
+ 228   1      #if ECBM_UART4_EN == 1   //µ±´®¿Ú4¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+                  UART4_SET_REG_S4CON (ECBM_UART4_S4CON_CONFIG);  //Ð´ÈëS4CONÅäÖÃ,°üº¬ÁËÍ¨ÐÅÎ»Êý¡¢½ÓÊÕÔÊÐí¡¢¶à»úÍ¨ÐÅ¡¢²¨
+             -ÌØÂÊ²úÉúÆ÷Ñ¡Ôñ¡£
+                  uart_set_io         (4,ECBM_UART4_IO);          //Ð´ÈëIOÑ¡Ôñ¿ØÖÆÎ»¡£
+                  uart_set_baud       (4,ECBM_UART4_BAUD_RATE);   //ÉèÖÃ²¨ÌØÂÊ¡£
+                  #if (ECBM_UART4_S4CON_CONFIG&0x40)==0
+                  TIMER2_SET_MODE_1T; //¶¨Ê±Æ÷2Ê±ÖÓÎªFosc,¼´1T¡£
+                  TIMER2_IT_DISABLE;  //½ûÖ¹¶¨Ê±Æ÷2ÖÐ¶Ï¡£
+                  TIMER2_POWER_ON;    //Æô¶¯¶¨Ê±Æ÷2¡£
+                  #else
+                  TIMER4_SET_MODE_1T; //¶¨Ê±Æ÷4Ê±ÖÓÎªFosc,¼´1T¡£
+                  TIMER4_IT_DISABLE;  //½ûÖ¹¶¨Ê±Æ÷4ÖÐ¶Ï¡£
+                  TIMER4_POWER_ON;    //Æô¶¯¶¨Ê±Æ÷4¡£
+                  #endif
+                  uart4_busy=0;       //´®¿Ú4Ã¦±êÖ¾Î»Çå0¡£
+                  UART4_IT_ENABLE;    //´ò¿ª´®¿Ú4ÖÐ¶Ï¡£
+              #endif
+ 244   1      
+ 245   1      #if ECBM_STREAM_EN == 1
+                  #if     ECBM_STREAM_TIMER == 0
+                      TIMER0_SET_MODE_12T;
+                      TIMER0_SET_REG_HL(65536-(u16)(10000.0f*((float)ECBM_SYSCLK_SETTING/12.0f/1000000.0f)));
+                      TIMER0_SET_MODE_TIMER;
+                      TIMER0_IT_ENABLE;
+                      TIMER0_POWER_ON;
+                  #elif   ECBM_STREAM_TIMER == 1
+                      TIMER1_SET_MODE_12T;
+                      TIMER1_SET_REG_HL(65536-(u16)(10.0f*((float)ECBM_SYSCLK_SETTING/12.0f/1000.0f)));
+                      TIMER1_SET_MODE_TIMER;
+                      TIMER1_IT_ENABLE;
+                      TIMER1_POWER_ON;
+                  #elif   ECBM_STREAM_TIMER == 2
+                      TIMER2_SET_MODE_12T;
+                      TIMER2_SET_REG_HL(65536-(u16)(10.0f*((float)ECBM_SYSCLK_SETTING/12.0f/1000.0f)));
+                      TIMER2_SET_MODE_TIMER;
+                      TIMER2_IT_ENABLE;
+                      TIMER2_POWER_ON;
+                  #elif   ECBM_STREAM_TIMER == 3
+                      TIMER3_SET_MODE_12T;
+                      TIMER3_SET_REG_HL(65536-(u16)(10.0f*((float)ECBM_SYSCLK_SETTING/12.0f/1000.0f)));
+                      TIMER3_SET_MODE_TIMER;
+                      TIMER3_IT_ENABLE;
+                      TIMER3_POWER_ON;
+                  #elif   ECBM_STREAM_TIMER == 4
+                      TIMER4_SET_MODE_12T;
+                      TIMER4_SET_REG_HL(65536-(u16)(10.0f*((float)ECBM_SYSCLK_SETTING/12.0f/1000.0f)));
+                      TIMER4_SET_MODE_TIMER;
+                      TIMER4_IT_ENABLE;
+                      TIMER4_POWER_ON;
+                  #endif
+              #endif
+ 278   1      }
+ 279          /*-------------------------------------------------------
+ 280          ´®¿ÚÊä³öIOÉèÖÃº¯Êý¡£
+ 281          -------------------------------------------------------*/
+ 282          void uart_set_io(u8 id,u8 io){
+ 283   1          switch(id){
+ 284   2              #if ECBM_UART1_EN
+ 285   2              case 1:{
+ 286   3                  UART1_SET_PIN(io);
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 6   
+
+ 287   3                  gpio_mode(uart1_io_map[io>>6][0],GPIO_IN);
+ 288   3                  gpio_mode(uart1_io_map[io>>6][1],GPIO_OUT);
+ 289   3              }break;
+ 290   2              #endif
+ 291   2              #if ECBM_UART2_EN
+                      case 2:{
+                          UART2_SET_PIN(io);
+                          gpio_mode(uart2_io_map[io][0],GPIO_IN);
+                          gpio_mode(uart2_io_map[io][1],GPIO_OUT);
+                      }break;
+                      #endif
+ 298   2              #if ECBM_UART3_EN
+                      case 3:{
+                          UART3_SET_PIN(io);
+                          gpio_mode(uart3_io_map[io>>1][0],GPIO_IN);
+                          gpio_mode(uart3_io_map[io>>1][1],GPIO_OUT);
+                      }break;
+                      #endif
+ 305   2              #if ECBM_UART4_EN
+                      case 4:{
+                          UART4_SET_PIN(io);
+                          gpio_mode(uart4_io_map[io>>2][0],GPIO_IN);
+                          gpio_mode(uart4_io_map[io>>2][1],GPIO_OUT);
+                      }break;
+                      #endif
+ 312   2          }
+ 313   1      }
+ 314          /*-------------------------------------------------------
+ 315          ´®¿Ú²¨ÌØÂÊÉèÖÃº¯Êý¡£
+ 316          -------------------------------------------------------*/
+ 317          void uart_set_baud(u8 id,u32 baud){
+ 318   1          u16 res;
+ 319   1          res=(u16)(65536-(u16)(ECBM_SYSCLK_SETTING/4/baud));//Í¨¹ý²¨ÌØÂÊÉèÖÃ¶¨Ê±Æ÷³õÖµ¡£
+ 320   1          switch(id){
+ 321   2              #if ECBM_UART1_EN == 1       //µ±´®¿Ú1¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+ 322   2              case 1:{
+ 323   3                  #if (ECBM_UART1_AUXR_CONFIG&0x01) == 0//Èç¹ûÑ¡ÔñÁË¶¨Ê±Æ÷1£¬
+ 324   3                  TIMER1_SET_REG_HL(res); //Éè¶¨¶¨Ê±³õÖµ¡£
+ 325   3                  #else               //Èç¹ûÑ¡ÔñÁË¶¨Ê±Æ÷2£¬
+                          TIMER2_SET_REG_HL(res); //Éè¶¨¶¨Ê±³õÖµ¡£
+                          #endif
+ 328   3              }break;
+ 329   2              #endif
+ 330   2              #if ECBM_UART2_EN == 1   //µ±´®¿Ú2¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+                      case 2:{
+                          TIMER2_SET_REG_HL(res);    //Éè¶¨¶¨Ê±³õÖµ¡£
+                      }break;
+                      #endif
+ 335   2              #if ECBM_UART3_EN == 1   //µ±´®¿Ú3¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+                      case 3:{
+                          #if (ECBM_UART3_S3CON_CONFIG&0x40)==0
+                          TIMER2_SET_REG_HL(res); //Éè¶¨¶¨Ê±³õÖµ¡£
+                          #else
+                          TIMER3_SET_REG_HL(res);    //Éè¶¨¶¨Ê±³õÖµ¡£
+                          #endif
+                      }break;
+                      #endif
+ 344   2              #if ECBM_UART4_EN == 1   //µ±´®¿Ú4¹¦ÄÜÊ¹ÄÜµÄÊ±ºò¡£
+                      case 4:{
+                          #if (ECBM_UART4_S4CON_CONFIG&0x40)==0
+                          TIMER2_SET_REG_HL(res);    //Éè¶¨¶¨Ê±³õÖµ¡£
+                          #else
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 7   
+
+                          TIMER4_SET_REG_HL(res);    //Éè¶¨¶¨Ê±³õÖµ¡£
+                          #endif
+                      }break;
+                      #endif
+ 353   2          }
+ 354   1      }
+ 355          /*-------------------------------------------------------
+ 356          ´®¿Úµ¥¸ö×Ö½Ú·¢ËÍº¯Êý¡£
+ 357          -------------------------------------------------------*/
+ 358          void uart_char(u8 id,u8 ch){
+ 359   1          switch(id){
+ 360   2              #if ECBM_UART1_EN
+ 361   2              case 1:{
+ 362   3                  #if   ECBM_UART1_PARITY == 1
+                          IF_ODD(ch){
+                              UART1_SET_TXD_BYTE9_0;
+                          }else{
+                              UART1_SET_TXD_BYTE9_1;
+                          }
+                          #elif ECBM_UART1_PARITY == 2
+                          IF_ODD(ch){
+                              UART1_SET_TXD_BYTE9_1;
+                          }else{
+                              UART1_SET_TXD_BYTE9_0;
+                          }
+                          #elif ECBM_UART1_PARITY == 3
+                          UART1_SET_TXD_BYTE9_1;
+                          #elif ECBM_UART1_PARITY == 4
+                          UART1_SET_TXD_BYTE9_0;
+                          #endif
+ 379   3                  UART1_SET_REG_SBUF(ch);
+ 380   3                  uart1_busy=1;
+ 381   3                  while(uart1_busy);
+ 382   3              }break;
+ 383   2              #endif
+ 384   2              #if ECBM_UART2_EN
+                      case 2:{
+                          #if   ECBM_UART2_PARITY == 1
+                          IF_ODD(ch){
+                              UART2_SET_TXD_BYTE9_0;
+                          }else{
+                              UART2_SET_TXD_BYTE9_1;
+                          }
+                          #elif ECBM_UART2_PARITY == 2
+                          IF_ODD(ch){
+                              UART2_SET_TXD_BYTE9_1;
+                          }else{
+                              UART2_SET_TXD_BYTE9_0;
+                          }    
+                          #elif ECBM_UART2_PARITY == 3
+                          UART2_SET_TXD_BYTE9_1;
+                          #elif ECBM_UART2_PARITY == 4
+                          UART2_SET_TXD_BYTE9_0;
+                          #endif
+                          UART2_SET_REG_S2BUF(ch);
+                          uart2_busy=1;
+                          while(uart2_busy);
+                      }break;
+                      #endif
+ 408   2              #if ECBM_UART3_EN
+                      case 3:{
+                          #if   ECBM_UART3_PARITY == 1
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 8   
+
+                          IF_ODD(ch){
+                              UART3_SET_TXD_BYTE9_0;
+                          }else{
+                              UART3_SET_TXD_BYTE9_1;
+                          }
+                          #elif ECBM_UART3_PARITY == 2
+                          IF_ODD(ch){
+                              UART3_SET_TXD_BYTE9_1;
+                          }else{
+                              UART3_SET_TXD_BYTE9_0;
+                          }    
+                          #elif ECBM_UART3_PARITY == 3
+                          UART3_SET_TXD_BYTE9_1;
+                          #elif ECBM_UART3_PARITY == 4
+                          UART3_SET_TXD_BYTE9_0;
+                          #endif
+                          UART3_SET_REG_S3BUF(ch);
+                          uart3_busy=1;
+                          while(uart3_busy);
+                      }break;
+                      #endif
+ 432   2              #if ECBM_UART4_EN
+                      case 4:{
+                          #if   ECBM_UART4_PARITY == 1
+                          IF_ODD(ch){
+                              UART4_SET_TXD_BYTE9_0;
+                          }else{
+                              UART4_SET_TXD_BYTE9_1;
+                          }
+                          #elif ECBM_UART4_PARITY == 2
+                          IF_ODD(ch){
+                              UART4_SET_TXD_BYTE9_1;
+                          }else{
+                              UART4_SET_TXD_BYTE9_0;
+                          }    
+                          #elif ECBM_UART4_PARITY == 3
+                          UART4_SET_TXD_BYTE9_1;
+                          #elif ECBM_UART4_PARITY == 4
+                          UART4_SET_TXD_BYTE9_0;
+                          #endif
+                          UART4_SET_REG_S4BUF(ch);
+                          uart4_busy=1;
+                          while(uart4_busy);
+                      }break;
+                      #endif
+ 456   2          }    
+ 457   1      }
+ 458          /*-------------------------------------------------------
+ 459          9Î»Ä£Ê½ÏÂµÄ×Ö·û·¢ËÍº¯Êý¡£
+ 460          -------------------------------------------------------*/
+ 461          void uart_char_9(u8 id,u8 ch,u8 bit9){
+ 462   1          switch(id){
+ 463   2              #if ECBM_UART1_EN
+ 464   2              case 1:{
+ 465   3                  if(bit9){
+ 466   4                      UART1_SET_TXD_BYTE9_1;
+ 467   4                  }else{
+ 468   4                      UART1_SET_TXD_BYTE9_0;
+ 469   4                  }
+ 470   3                  UART1_SET_REG_SBUF(ch);
+ 471   3                  uart1_busy=1;
+ 472   3                  while(uart1_busy);
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 9   
+
+ 473   3              }break;
+ 474   2              #endif
+ 475   2              #if ECBM_UART2_EN
+                      case 2:{
+                          if(bit9){
+                              UART2_SET_TXD_BYTE9_1;
+                          }else{
+                              UART2_SET_TXD_BYTE9_0;
+                          }
+                          UART2_SET_REG_S2BUF(ch);
+                          uart2_busy=1;
+                          while(uart2_busy);
+                      }break;
+                      #endif
+ 487   2              #if ECBM_UART3_EN
+                      case 3:{
+                          if(bit9){
+                              UART3_SET_TXD_BYTE9_1;
+                          }else{
+                              UART3_SET_TXD_BYTE9_0;
+                          }
+                          UART3_SET_REG_S3BUF(ch);
+                          uart3_busy=1;
+                          while(uart3_busy);
+                      }break;
+                      #endif
+ 499   2              #if ECBM_UART4_EN
+                      case 4:{
+                          if(bit9){
+                              UART4_SET_TXD_BYTE9_1;
+                          }else{
+                              UART4_SET_TXD_BYTE9_0;
+                          }
+                          UART4_SET_REG_S4BUF(ch);
+                          uart4_busy=1;
+                          while(uart4_busy);
+                      }break;
+                      #endif
+ 511   2          }
+ 512   1      }
+ 513          /*-------------------------------------------------------
+ 514          ´®¿Ú×Ö·û´®·¢ËÍº¯Êý¡£
+ 515          -------------------------------------------------------*/
+ 516          void uart_string(u8 id,u8 * str){
+ 517   1          while(*str){
+ 518   2              uart_char(id,*str++);
+ 519   2          }    
+ 520   1      }
+ 521          /*-------------------------------------------------------
+ 522          ´®¿Ú´òÓ¡º¯Êý¡£
+ 523          -------------------------------------------------------*/
+ 524          #if    ECBM_UART_PRINTF_EN    ==    1
+ 525          void uart_printf(u8 id,const char * str,...){
+ 526   1          char xdata buf[ECBM_UART_PRINTF_BUF_MAX];
+ 527   1          va_list vp;
+ 528   1          va_start(vp, str);
+ 529   1          
+ 530   1          vsprintf(buf,str,vp);
+ 531   1          va_end(vp);
+ 532   1          uart_string(id,buf);
+ 533   1      }
+ 534          #endif
+C51 COMPILER V9.01   UART                                                                  07/17/2022 00:55:32 PAGE 10  
+
+ 535          #endif  //ºÍ×îÉÏÃæµÄ#ifndefÅäºÏ³ÉÒ»¸ö³ÌÐò¶Î¡£
+ 536                  //ÒÔÒ»¸ö¿ÕÐÐÎª½áÎ²¡£
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    363    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----     120
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,94 @@
+C51 COMPILER V9.01   STREAM                                                                07/20/2022 08:46:58 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE STREAM
+OBJECT MODULE PLACED IN .\output\stream.obj
+COMPILER INVOKED BY: D:\Paths\Keil_v5\C51\BIN\C51.EXE device\stream.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.
+                    -\device) DEBUG OBJECTEXTEND PRINT(.\output\stream.lst) OBJECT(.\output\stream.obj)
+
+line level    source
+
+   1          #include "stream.h"//加载头文件
+   2          #if ECBM_STREAM_EN//检查本库有没有被使能
+              /*--------------------------------------变量定义-----------------------------------*/
+              u8 xdata ecbm_stream_buf[ECBM_STREAM_SZIE];
+              u8 ecbm_stream_start =0;
+              u8 ecbm_stream_stop  =0;
+              u8 ecbm_stream_count =0;
+              u8 ecbm_stream_time  =0;
+              u8 ecbm_stream_status=0;
+              /*--------------------------------------程序定义-----------------------------------*/
+              /*-------------------------------------------------------
+              流处理主函数函数。
+              -------------------------------------------------------*/
+              void ecbm_stream_main(void){
+                  //进入处理的条件：
+                  if(ecbm_stream_status&ECBM_STREAM_TIME_OUT){//必须是接收超时状态，这个状态代表已经过了一段时间没有新的
+             -数据过来了。
+                      if((ecbm_stream_count>0)&&(ecbm_stream_count<ECBM_STREAM_SZIE)){//判断接收到的数据的数量是否合法。
+                          ecbm_stream_status&=~ECBM_STREAM_TIME_OUT;  //开始处理数据了，清除这个标志位。
+                          while(ecbm_stream_count){
+                              ecbm_stream_exe(ecbm_stream_buf[ecbm_stream_start]);
+                              ecbm_stream_start++;
+                              if(ecbm_stream_start>=ECBM_STREAM_SZIE){
+                                  ecbm_stream_start=0;
+                              }
+                              ecbm_stream_count--;
+                          }
+                          ecbm_stream_start=ecbm_stream_stop;
+                      }else{//如果不合法的话，就执行下面的动作。
+                          if(ecbm_stream_count>=ECBM_STREAM_SZIE){    //如果是接收的数据超过了队列的容忍范围，
+                              ecbm_stream_count=0;                    //考虑到数据可能已经严重损失，将抛弃掉这些数据。
+                          }
+                      }
+                  }
+                  if(ecbm_stream_status&ECBM_STREAM_UART_IDLE){
+                      ecbm_stream_status&=~ECBM_STREAM_UART_IDLE;  //清除这个标志位。
+                      #if ECBM_STREAM_FUR_EN
+                          es_fur_status=FUR_READY;
+                      #endif
+                      #if ECBM_STREAM_MODBUS_EN
+                          es_modbus_rtu_status=ES_MODBUS_RTU_READY;
+                      #endif
+                      #if ECBM_STREAM_ECP_EN
+                          es_ecp_status=ES_ECP_READY;
+                      #endif
+                      #if ECBM_STREAM_XMODEM_EN
+                          es_xmodem_status     =0; 
+                      #endif
+              
+                  }
+              }
+              /*-------------------------------------------------------
+              流处理比对函数。
+              -------------------------------------------------------*/
+C51 COMPILER V9.01   STREAM                                                                07/20/2022 08:46:58 PAGE 2   
+
+              #if ECBM_STREAM_CMP_EN
+              void ecbm_stream_strcmp(u8 dat,u8 code * str,u8 * count){
+                  if(str[*count]==dat){    //判断一下当前串口数据和关键字的某个字符是否一样。
+                      (*count)++;          //一样的话，计数+1，下次循环就会判断下一个字符了。
+                  }else{                   //不一样的话，
+                      *count=0;            //计数清零。但是在本次循环中，计数清零会引入关键字的一个新字符。
+                      if(str[*count]==dat){//既然出现了新字符就要判断下是否与当前串口数据符合。
+                          (*count)++;      //符合就计数+1。
+                      }
+                  }
+              }
+              #endif
+              #endif  //和最上面的#ifndef配合成一个程序段。
+  67                  //以一个空行为结尾。
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

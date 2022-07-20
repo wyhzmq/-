@@ -1,0 +1,1 @@
+"ECBM_LIB\mdu16.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\mdu16.lst) OBJECT(.\output\mdu16.obj)

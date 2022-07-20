@@ -1,0 +1,1 @@
+"device\stream_modbus.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\stream_modbus.lst) OBJECT(.\output\stream_modbus.obj)

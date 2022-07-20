@@ -1,0 +1,61 @@
+C51 COMPILER V9.01   MAIN                                                                  07/18/2022 15:34:02 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\output\main.obj
+COMPILER INVOKED BY: D:\Paths\Keil_v5\C51\BIN\C51.EXE main.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) 
+                    -DEBUG OBJECTEXTEND PRINT(.\output\main.lst) OBJECT(.\output\main.obj)
+
+line level    source
+
+   1          #include "ecbm_core.h"  //加载库函数的头文件。
+   2          #define TimeOutSet 3
+   3          #define COM_RX1_Lenth 100
+   4          u8 RECED_FLAG=0;
+   5          u8 RX_TimeOut=0;
+   6          u8 RX_Cnt=0;
+   7          u8 rcv_buff[COM_RX1_Lenth];//接受缓存
+   8          u8 i;
+   9          void main(void){        //main函数，必须的。
+  10   1          
+  11   1              system_init();      //系统初始化函数，也是必须的。
+  12   1                
+  13   1              timer_init();//初始化定时器
+  14   1              timer_set_timer_mode(0,20000);//timer0设置为2ms
+  15   1              timer_start(0);//打开定时器0
+  16   1              while(1){
+  17   2                      if(RX_TimeOut ==0)
+  18   2                      {
+  19   3                              if(RX_Cnt>0)
+  20   3                              {
+  21   4                                      for(i=0;i<RX_Cnt;i++) uart_char(1,rcv_buff[i]);//收到的数据原
+  22   4                              }
+  23   3                              RX_Cnt=0;
+  24   3                              RX_TimeOut=TimeOutSet;
+  25   3                      }
+  26   2          }
+  27   1      }
+  28          void uart1_receive_callback()
+  29          {
+  30   1              if(RX_Cnt >= COM_RX1_Lenth) RX_Cnt = 0;
+  31   1              rcv_buff[RX_Cnt++] = SBUF;//收到数据存入缓冲区
+  32   1              RX_TimeOut=TimeOutSet;
+  33   1      }
+  34          void timer0_it_callback()
+  35          {
+  36   1              if(RX_TimeOut >0) RX_TimeOut--;
+  37   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    143    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    104    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

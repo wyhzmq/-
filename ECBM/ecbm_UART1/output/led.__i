@@ -1,0 +1,1 @@
+"ECBM_LIB\led.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\led.lst) OBJECT(.\output\led.obj)

@@ -1,0 +1,238 @@
+A51 MACRO ASSEMBLER  STARTUP                                                              07/15/2022 18:40:57 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02
+OBJECT MODULE PLACED IN .\output\STARTUP.obj
+ASSEMBLER INVOKED BY: D:\Paths\Keil_v5\C51\BIN\A51.EXE STARTUP.A51 SET(LARGE) DEBUG PRINT(.\output\STARTUP.lst) OBJECT(.
+                      \output\STARTUP.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     $nomod51 
+                       2     ;------------------------------------------------------------------------------
+                       3     ;Õâ¸öÎÄ¼þÊÇC51±àÒëÆ÷°üµÄÒ»²¿·Ö
+                       4     ;Keil Elektronik GmbH and Keil Software, Inc.°æÈ¨ËùÓÐ(c) 1988-2005
+                       5     ;°æ±¾8.01
+                       6     ;<<< Use Configuration Wizard in Context Menu >>>
+                       7     ;------------------------------------------------------------------------------
+                       8     ;
+                       9     ;ÓÃ»§×Ô¶¨Òå<h>ÉÏµç³õÊ¼»¯ÄÚ´æ
+                      10     ;  Ê¹ÓÃÒÔÏÂEQUÓï¾ä³õÊ¼»¯ÄÚ´æ
+                      11     ;  ÔÚ´¦ÀíÆ÷¸´Î»Ê±¿ÉÒÔ¶¨Òå:
+                      12     ;
+                      13     ; <o> IDATALEN: IDATAÄÚ´æ´óÐ¡ <0x0-0x100>
+                      14     ;     <i> ×¢Òâ:IDATAÄÚ´æÆðÊ¼µØÖ·µÄ¾ø¶ÔÖµ×ÜÊÇ0
+                      15     ;     <i>IDATA¿Õ¼äÔÚÎïÀíÉÏÓëDATAºÍBITÇøÓòÖØµþ¡£
+  0080                16     IDATALEN        EQU     128
+                      17     ;
+                      18     ; <o> XDATASTART: XDATAÄÚ´æÆðÊ¼µØÖ· <0x0-0xFFFF> 
+                      19     ;     <i>XDATAÄÚ´æµÄ¾ø¶ÔÆðÊ¼µØÖ·
+  0000                20     XDATASTART      EQU     0     
+                      21     ;
+                      22     ; <o> XDATALEN: XDATAÄÚ´æ´óÐ¡ <0x0-0xFFFF> 
+                      23     ;     <i>XDATAÄÚ´æ³¤¶È(ÒÔ×Ö½ÚÎªµ¥Î»)¡£
+  2000                24     XDATALEN        EQU     8192      
+                      25     ;
+                      26     ; <o> PDATASTART: PDATAÄÚ´æÆðÊ¼µØÖ· <0x0-0xFFFF> 
+                      27     ;     <i>PDATAÄÚ´æµÄ¾ø¶ÔÆðÊ¼µØÖ·
+  0000                28     PDATASTART      EQU     0
+                      29     ;
+                      30     ; <o> PDATALEN: PDATAÄÚ´æ´óÐ¡ <0x0-0xFF> 
+                      31     ;     <i>PDATAÄÚ´æ³¤¶È(ÒÔ×Ö½ÚÎªµ¥Î»)¡£
+  0000                32     PDATALEN        EQU     0
+                      33     ;
+                      34     ;</h>
+                      35     ;------------------------------------------------------------------------------
+                      36     ;
+                      37     ;<h> ¿ÉÖØÈëÕ»µÄ³õÊ¼»¯
+                      38     ;
+                      39     ;  ÏÂÃæµÄEQUÓï¾ä¶¨ÒåÁËÓÃÓÚÖØÈëµÄ¶ÑÕ»Ö¸Õë
+                      40     ;  º¯Ê²¢³õÊ¼»¯ÖÐ¶Ï:
+                      41     ;
+                      42     ; <h> ÔÚSMALLÄ£ÐÍÖÐ¿ÉÖØÈëº¯ÊµÄ¶ÑÕ»¿Õ¼ä¡£
+                      43     ;  <q> IBPSTACK: ÆôÓÃSMALLÄ£ÐÍ¿ÉÖØÈë¶ÑÕ»
+                      44     ;     <i> ÔÚSMALLÄ£ÐÍÖÐ¿ÉÖØÈëº¯ÊµÄ¶ÑÕ»¿Õ¼ä¡£
+  0000                45     IBPSTACK        EQU     0       ; ÉèÖÃÎª1´ú±íÊ¹ÓÃsmallÐÍ¿ÉÖØÈëÄ£ÐÍ¡£
+                      46     ;  <o> IBPSTACKTOP: SMALLÄ£ÐÍ¶ÑÕ»µÄ½áÊøµØÖ· <0x0-0xFF>
+                      47     ;     <i> ½«¶ÑÕ»¶¥²¿ÉèÖÃÎª×î¸ßÎ»ÖÃ¡£
+  0100                48     IBPSTACKTOP     EQU     0xFF +1     ; Ä¬ÈÏ 0FFH+1  
+                      49     ; </h>
+                      50     ;
+                      51     ; <h> LARGEÄ£ÐÍÖÐ¿ÉÖØÈëº¯ÊµÄ¶ÑÕ»¿Õ¼ä¡£     
+                      52     ;  <q> XBPSTACK: ÆôÓÃLARGEÄ£ÐÍÖØÈë¶ÑÕ»
+                      53     ;     <i> LARGEÄ£ÐÍÖÐ¿ÉÖØÈëº¯ÊµÄ¶ÑÕ»¿Õ¼ä¡£
+  0000                54     XBPSTACK        EQU     0       ; ÉèÖÃÎª1´ú±íÊ¹ÓÃlargeÐÍ¿ÉÖØÈëÄ£ÐÍ¡£
+                      55     ;  <o> XBPSTACKTOP: LARGEÄ£ÐÍ¶ÑÕ»µÄ½áÊøµØÖ· <0x0-0xFFFF>
+                      56     ;     <i> ½«¶ÑÕ»¶¥²¿ÉèÖÃÎª×î¸ßÎ»ÖÃ¡£
+  0000                57     XBPSTACKTOP     EQU     0xFFFF +1   ; Ä¬ÈÏ 0FFFFH+1 
+A51 MACRO ASSEMBLER  STARTUP                                                              07/15/2022 18:40:57 PAGE     2
+
+                      58     ; </h>
+                      59     ;
+                      60     ; <h> COMPACTÄ£ÐÍÖÐ¿ÉÖØÈëº¯ÊµÄ¶ÑÕ»¿Õ¼ä¡£   
+                      61     ;  <q> PBPSTACK: ÆôÓÃCOMPACTÄ£ÐÍ¿ÉÖØÈë¶ÑÕ»
+                      62     ;     <i> COMPACTÄ£ÐÍÖÐ¿ÉÖØÈëº¯ÊµÄ¶ÑÕ»¿Õ¼ä¡£
+  0000                63     PBPSTACK        EQU     0       ; ÉèÖÃÎª1´ú±íÊ¹ÓÃcompactÐÍ¿ÉÖØÈëÄ£ÐÍ¡£
+                      64     ;
+                      65     ;   <o> PBPSTACKTOP: COMPACTÄ£ÐÍ¶ÑÕ»µÄ½áÊøµØÖ· <0x0-0xFFFF>
+                      66     ;     <i> ½«¶ÑÕ»¶¥²¿ÉèÖÃÎª×î¸ßÎ»ÖÃ¡£
+  0100                67     PBPSTACKTOP     EQU     0xFF +1     ; Ä¬ÈÏ 0FFH+1  
+                      68     ; </h>
+                      69     ;</h>
+                      70     ;------------------------------------------------------------------------------
+                      71     ;
+                      72     ;  Ê¹ÓÃ64kbyte xdata RAMµÄ½ô´ÕÄ£ÐÍµÄÄÚ´æÒ³Ãæ
+                      73     ;  <e>¾«¼òÄ£ÐÍÒ³Ãæ¶¨Òå
+                      74     ;
+                      75     ;  <i>¶¨ÒåÓÃÓÚPDATA±äÁ¿µÄXDATAÒ³Ãæ¡£ 
+                      76     ;  <i>page±ØÐëÓëÁ´½ÓÆ÷µ÷ÓÃÖÐÉèÖÃµÄpageÒ»ÖÂ¡£
+                      77     ;
+                      78     ; ÆôÓÃpdataÄÚ´æÒ³³õÊ¼»¯
+  0000                79     PPAGEENABLE     EQU     0       ; Èç¹ûÊ¹ÓÃpdata¶ÔÏó£¬ÔòÉèÖÃÎª1¡£
+                      80     ;
+                      81     ; <o> PPAGEÊÁ¿ <0x0-0xFF> 
+                      82     ; <i>ÓÃÓÚ´æ·ÅPDATA±äÁ¿µÄÒ³ÃæÊÁ¿¡£ÆäµØÖ·×î¶àÎª256×Ö½Ú¡£
+  0000                83     PPAGE           EQU     0
+                      84     ;
+                      85     ; <o> Ìá¹©¸ß8Î»µØÖ·×Ö½ÚµÄSFRµØÖ· <0x0-0xFF> 
+                      86     ; <i>´ó¶àÊ8051ºÍ¼æÈÝÐÍºÅÊ¹ÓÃP2×÷Îª¸ß8Î»µØÖ·×Ö½Ú
+  00A0                87     PPAGE_SFR       DATA    0A0H
+                      88     ;
+                      89     ; </e>
+                      90     ;------------------------------------------------------------------------------
+                      91     
+                      92     ; ±ê×¼µÄSFR·ûºÅ
+  00E0                93     ACC     DATA    0E0H
+  00F0                94     B       DATA    0F0H
+  0081                95     SP      DATA    81H
+  0082                96     DPL     DATA    82H
+  0083                97     DPH     DATA    83H
+                      98     
+                      99                     NAME    ?C_STARTUP
+                     100     
+                     101     
+                     102     ?C_C51STARTUP   SEGMENT   CODE
+                     103     ?STACK          SEGMENT   IDATA
+                     104     
+----                 105                     RSEG    ?STACK
+0000                 106                     DS      1
+                     107     
+                     108                     EXTRN CODE (?C_START)
+                     109                     PUBLIC  ?C_STARTUP
+                     110     
+----                 111                     CSEG    AT      0
+0000 020000   F      112     ?C_STARTUP:     LJMP    STARTUP1
+                     113     
+----                 114                     RSEG    ?C_C51STARTUP
+                     115     
+0000                 116     STARTUP1:
+                     117     
+                     118     IF IDATALEN <> 0
+0000 787F            119                     MOV     R0,#IDATALEN - 1
+0002 E4              120                     CLR     A
+0003 F6              121     IDATALOOP:      MOV     @R0,A
+0004 D8FD            122                     DJNZ    R0,IDATALOOP
+                     123     ENDIF
+A51 MACRO ASSEMBLER  STARTUP                                                              07/15/2022 18:40:57 PAGE     3
+
+                     124     
+                     125     IF XDATALEN <> 0
+0006 900000          126                     MOV     DPTR,#XDATASTART
+0009 7F00            127                     MOV     R7,#LOW (XDATALEN)
+                     128       IF (LOW (XDATALEN)) <> 0
+                                             MOV     R6,#(HIGH (XDATALEN)) +1
+                               ELSE
+000B 7E20            131                     MOV     R6,#HIGH (XDATALEN)
+                     132       ENDIF
+000D E4              133                     CLR     A
+000E F0              134     XDATALOOP:      MOVX    @DPTR,A
+000F A3              135                     INC     DPTR
+0010 DFFC            136                     DJNZ    R7,XDATALOOP
+0012 DEFA            137                     DJNZ    R6,XDATALOOP
+                     138     ENDIF
+                     139     
+                     140     IF PPAGEENABLE <> 0
+                                             MOV     PPAGE_SFR,#PPAGE
+                             ENDIF
+                     143     
+                     144     IF PDATALEN <> 0
+                                             MOV     R0,#LOW (PDATASTART)
+                                             MOV     R7,#LOW (PDATALEN)
+                                             CLR     A
+                             PDATALOOP:      MOVX    @R0,A
+                                             INC     R0
+                                             DJNZ    R7,PDATALOOP
+                             ENDIF
+                     152     
+                     153     IF IBPSTACK <> 0
+                             EXTRN DATA (?C_IBP)
+                             
+                                             MOV     ?C_IBP,#LOW IBPSTACKTOP
+                             ENDIF
+                     158     
+                     159     IF XBPSTACK <> 0
+                             EXTRN DATA (?C_XBP)
+                             
+                                             MOV     ?C_XBP,#HIGH XBPSTACKTOP
+                                             MOV     ?C_XBP+1,#LOW XBPSTACKTOP
+                             ENDIF
+                     165     
+                     166     IF PBPSTACK <> 0
+                             EXTRN DATA (?C_PBP)
+                                             MOV     ?C_PBP,#LOW PBPSTACKTOP
+                             ENDIF
+                     170     
+0014 758100   F      171                     MOV     SP,#?STACK-1
+                     172     
+                     173     ; This code is required if you use L51_BANK.A51 with Banking Mode 4
+                     174     ;<h> Code Banking
+                     175     ; <q> Select Bank 0 for L51_BANK.A51 Mode 4
+                     176     
+                             
+                             
+                                             
+                             
+                     181     ;</h>
+0017 020000   F      182                     LJMP    ?C_START
+                     183     
+                     184                     END
+A51 MACRO ASSEMBLER  STARTUP                                                              07/15/2022 18:40:57 PAGE     4
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+?C_C51STARTUP. . .  C SEG    001AH       REL=UNIT
+?C_START . . . . .  C ADDR   -----       EXT
+?C_STARTUP . . . .  C ADDR   0000H   A   
+?STACK . . . . . .  I SEG    0001H       REL=UNIT
+ACC. . . . . . . .  D ADDR   00E0H   A   
+B. . . . . . . . .  D ADDR   00F0H   A   
+DPH. . . . . . . .  D ADDR   0083H   A   
+DPL. . . . . . . .  D ADDR   0082H   A   
+IBPSTACK . . . . .  N NUMB   0000H   A   
+IBPSTACKTOP. . . .  N NUMB   0100H   A   
+IDATALEN . . . . .  N NUMB   0080H   A   
+IDATALOOP. . . . .  C ADDR   0003H   R   SEG=?C_C51STARTUP
+PBPSTACK . . . . .  N NUMB   0000H   A   
+PBPSTACKTOP. . . .  N NUMB   0100H   A   
+PDATALEN . . . . .  N NUMB   0000H   A   
+PDATASTART . . . .  N NUMB   0000H   A   
+PPAGE. . . . . . .  N NUMB   0000H   A   
+PPAGEENABLE. . . .  N NUMB   0000H   A   
+PPAGE_SFR. . . . .  D ADDR   00A0H   A   
+SP . . . . . . . .  D ADDR   0081H   A   
+STARTUP1 . . . . .  C ADDR   0000H   R   SEG=?C_C51STARTUP
+XBPSTACK . . . . .  N NUMB   0000H   A   
+XBPSTACKTOP. . . .  N NUMB   0000H   A   
+XDATALEN . . . . .  N NUMB   2000H   A   
+XDATALOOP. . . . .  C ADDR   000EH   R   SEG=?C_C51STARTUP
+XDATASTART . . . .  N NUMB   0000H   A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

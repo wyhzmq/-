@@ -1,0 +1,219 @@
+C51 COMPILER V9.01   IIC                                                                   07/18/2022 16:31:19 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE IIC
+OBJECT MODULE PLACED IN .\output\iic.obj
+COMPILER INVOKED BY: D:\Paths\Keil_v5\C51\BIN\C51.EXE ECBM_LIB\iic.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\
+                    -device) DEBUG OBJECTEXTEND PRINT(.\output\iic.lst) OBJECT(.\output\iic.obj)
+
+line level    source
+
+   1          #include "ecbm_core.h"//统一加载核心头文件
+   2          #if ECBM_IIC_LIB_EN   //检查本库有没有被使能
+              /*--------------------------------------变量定义-----------------------------------*/
+              bit iic_master_busy;
+              u8 xdata iic_index;
+              /*--------------------------------------程序定义-----------------------------------*/
+              /*-------------------------------------------------------
+              IIC的引脚设置函数。
+              -------------------------------------------------------*/
+              void iic_set_pin(u8 group){
+              #if (ECBM_MCU==0x310201)||(ECBM_MCU==0x3102A1)
+                  switch(group){
+                      case IIC_PIN_P32_P33:{//切换至D32和D33
+                          P3M1|=0x0C;//0000 1100 IIC的引脚需要是开漏模式
+                          P3M0|=0x0C;//0000 1100 IIC的引脚需要是开漏模式
+                          P3PU|=0x0C;//0000 1100 IIC需要一个上拉电阻       
+                      }break;
+                      case IIC_PIN_P54_P55:{//切换至D54和D55
+                          P5M1|=0x30;//0011 0000 IIC的引脚需要是开漏模式
+                          P5M0|=0x30;//0011 0000 IIC的引脚需要是开漏模式
+                          P5PU|=0x30;//0011 0000 IIC需要一个上拉电阻
+                      }break;
+                      default:break;
+                  }    
+              #else
+                  switch(group){
+                      case IIC_PIN_P15_P14:{//切换至D14和D15
+                          P1M1|=0x30;//0011 0000 IIC的引脚需要是开漏模式
+                          P1M0|=0x30;//0011 0000 IIC的引脚需要是开漏模式
+                          P1PU|=0x30;//0011 0000 IIC需要一个上拉电阻       
+                      }break;
+                      case IIC_PIN_P25_P24:{//切换至D24和D25
+                          P2M1|=0x30;//0011 0000 IIC的引脚需要是开漏模式
+                          P2M0|=0x30;//0011 0000 IIC的引脚需要是开漏模式
+                          P2PU|=0x30;//0011 0000 IIC需要一个上拉电阻
+                      }break;
+                      case IIC_PIN_P77_P76:{//切换至D76和D77
+                          P7M1|=0xC0;//1100 0000 IIC的引脚需要是开漏模式
+                          P7M0|=0xC0;//1100 0000 IIC的引脚需要是开漏模式
+                          P7PU|=0xC0;//1100 0000 IIC需要一个上拉电阻
+                      }break;
+                      case IIC_PIN_P32_P33:{//切换至D32和D33
+                          P3M1|=0x0C;//0000 1100 IIC的引脚需要是开漏模式
+                          P3M0|=0x0C;//0000 1100 IIC的引脚需要是开漏模式
+                          P3PU|=0x0C;//0000 1100 IIC需要一个上拉电阻
+                      }break;
+                      default:break;
+                  }
+              #endif
+                  IIC_SET_PIN(group);
+              }
+              /*-------------------------------------------------------
+              IIC的引脚设置函数（内联版）。
+              -------------------------------------------------------*/
+C51 COMPILER V9.01   IIC                                                                   07/18/2022 16:31:19 PAGE 2   
+
+              void iic_set_pin_linkage(u8 group){
+                  if(iic_index!=group){
+                      iic_index=group;
+                      IIC_POWER_OFF;
+                      IIC_SET_PIN(group);
+                      IIC_POWER_ON;
+                  }
+              }
+              /*-------------------------------------------------------
+              IIC的引脚还原函数。
+              -------------------------------------------------------*/
+              void iic_reset_pin(u8 group){
+              #if    (ECBM_MCU==0x310201)||(ECBM_MCU==0x3102A1)
+                  switch(group){
+                      case IIC_PIN_P32_P33:{//还原D32和D33
+                          P3M1&=~0x0C;//1111 0011 还原引脚模式
+                          P3M0&=~0x0C;//1111 0011 还原引脚模式
+                          P3PU&=~0x0C;//1111 0011 去掉上拉电阻       
+                      }break;
+                      case IIC_PIN_P54_P55:{//还原D54和D55
+                          P5M1&=~0x30;//1100 1111 还原引脚模式
+                          P5M0&=~0x30;//1100 1111 还原引脚模式
+                          P5PU&=~0x30;//1100 1111 去掉上拉电阻
+                      }break;
+                      default:break;
+                  }    
+              #else
+                  switch(group){
+                      case IIC_PIN_P15_P14:{//还原D14和D15
+                          P1M1&=~0x30;//1100 1111 还原引脚模式
+                          P1M0&=~0x30;//1100 1111 还原引脚模式
+                          P1PU&=~0x30;//1100 1111 去掉上拉电阻      
+                      }break;
+                      case IIC_PIN_P25_P24:{//还原D24和D25
+                          P2M1&=~0x30;//1100 1111 还原引脚模式
+                          P2M0&=~0x30;//1100 1111 还原引脚模式
+                          P2PU&=~0x30;//1100 1111 去掉上拉电阻
+                      }break;
+                      case IIC_PIN_P77_P76:{//还原D76和D77
+                          P7M1&=~0xC0;//0011 1111 还原引脚模式
+                          P7M0&=~0xC0;//0011 1111 还原引脚模式
+                          P7PU&=~0xC0;//0011 1111 去掉上拉电阻
+                      }break;
+                      case IIC_PIN_P32_P33:{//还原D32和D33
+                          P3M1&=~0x0C;//1111 0011 还原引脚模式
+                          P3M0&=~0x0C;//1111 0011 还原引脚模式
+                          P3PU&=~0x0C;//1111 0011 去掉上拉电阻
+                      }break;
+                      default:break;
+                  }
+              #endif
+              }
+              /*-------------------------------------------------------
+              IIC主机初始化函数。
+              -------------------------------------------------------*/
+              void iic_master_init(void){
+                  u8 res=63;
+                  res=(u8)(((ECBM_SYSCLK_SETTING/2/ECBM_IIC_WAIT)-4)/2);
+                  IIC_SET_MODE_MASTER;//设置为主机
+                  IIC_SET_SPEED(res);//等待时钟
+                  IIC_SET_REG_MSST(0);//清除所有标志位
+                  iic_set_pin(ECBM_IIC_IO);//默认使用0组，即P14和P15
+C51 COMPILER V9.01   IIC                                                                   07/18/2022 16:31:19 PAGE 3   
+
+                  iic_index=ECBM_IIC_IO;
+                  IIC_POWER_ON;//开启IIC
+              }
+              /*-------------------------------------------------------
+              IIC从机初始化函数。
+              -------------------------------------------------------*/
+              void iic_slave_init(void){
+                  u8 res=63;
+                  res=(u8)(((ECBM_SYSCLK_SETTING/2/ECBM_IIC_WAIT)-4)/2);
+                  IIC_SET_MODE_SLAVE;//设置为从机
+                  IIC_SET_SPEED(res); //等待时钟
+                  IIC_SET_REG_MSST(0);//清除所有标志位
+                  iic_set_pin(ECBM_IIC_IO);
+                  iic_index=ECBM_IIC_IO;
+                  IIC_POWER_ON;
+              }
+              /*-------------------------------------------------------
+              IIC的各种操作函数。请根据器件的协议来排布。
+              iic_start     :开始函数，对应IIC开始帧。
+              iic_stop      :停止函数，对应IIC停止帧。
+              iic_write     :写数据函数，往总线上写1字节数据。
+              iic_write_ack :写ACK函数，往总线上写一个ACK。
+              iic_write_nack:写NO ACK函数，往总线上写一个NO ACK。
+              iic_read      :读数据函数，读取总线上一个字节的数据。
+              iic_read_ack  :读ACK函数，读取总线上是否有ACK。
+              -------------------------------------------------------*/
+              void iic_start(){
+                  u8 timeout=ECBM_IIC_TIMEOUT;
+                  iic_master_busy=1;
+                  IIC_CMD_START;//发送START命令
+                  while(iic_master_busy&&(timeout--));
+              }
+              void iic_stop(){
+                  u8 timeout=ECBM_IIC_TIMEOUT;
+                  iic_master_busy = 1;
+                  IIC_CMD_STOP;//发送STOP命令
+                  while(iic_master_busy&&(timeout--));
+              }
+              void iic_write(u8 dat){
+                  u8 timeout=ECBM_IIC_TIMEOUT;
+                  IIC_SET_REG_DATA(dat);//写数据到数据缓冲区
+                  iic_master_busy=1;
+                  IIC_CMD_TX_DATA;//发送SEND命令
+                  while(iic_master_busy&&(timeout--));
+              }
+              void iic_write_ack(){
+                  u8 timeout=ECBM_IIC_TIMEOUT;
+                  iic_master_busy=1;
+                  IIC_CMD_TX_ACK; //发送ACK命令
+                  while(iic_master_busy&&(timeout--));
+              }
+              void iic_write_nack(){
+                  u8 timeout=ECBM_IIC_TIMEOUT;
+                  iic_master_busy=1;
+                  IIC_CMD_TX_NACK; //发送ACK命令
+                  while(iic_master_busy&&(timeout--));
+              }
+              u8 iic_read(){
+                  u8 timeout=ECBM_IIC_TIMEOUT;
+                  iic_master_busy=1;
+                  IIC_CMD_RX_DATA;  //发送RECV命令
+                  while(iic_master_busy&&(timeout--));
+C51 COMPILER V9.01   IIC                                                                   07/18/2022 16:31:19 PAGE 4   
+
+                  return IIC_GET_REG_DATA;
+              }
+              bit iic_read_ack(){
+                  u8 timeout=ECBM_IIC_TIMEOUT;
+                  iic_master_busy=1;
+                  IIC_CMD_RX_ACK; //发送读ACK命令
+                  while(iic_master_busy&&(timeout--));
+                  return IIC_GET_ACK>>1;
+              }
+              #endif  //和最上面的#ifndef配合成一个程序段。
+ 189                  //以一个空行为结尾。
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

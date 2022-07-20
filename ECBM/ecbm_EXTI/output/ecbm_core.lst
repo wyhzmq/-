@@ -1,0 +1,381 @@
+C51 COMPILER V9.01   ECBM_CORE                                                             07/18/2022 16:31:18 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE ECBM_CORE
+OBJECT MODULE PLACED IN .\output\ecbm_core.obj
+COMPILER INVOKED BY: D:\Paths\Keil_v5\C51\BIN\C51.EXE ECBM_LIB\ecbm_core.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\ECBM_
+                    -LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\ecbm_core.lst) OBJECT(.\output\ecbm_core.obj)
+
+line level    source
+
+   1          #include "ecbm_core.h"
+   2          /*------------------------------------资源冲突警告---------------------------------*/
+   3          #if ECBM_AUTO_DOWNLOAD_EN
+   4          #   if ECBM_UART_LIB_EN == 0
+              #       warning 因串口库未使能,自动下载功能失效!
+              #   endif
+   7          #   if ECBM_UART1_EN == 0
+              #       error 自动下载功能因串口1未使能而开启失败,请前往uart.h使能串口1!
+              #   endif
+  10          #   if ECBM_UART1_IO != 0
+              #       error 自动下载功能需要串口1映射到P30和P31,请前往uart.h修改串口1的输出IO!
+              #   endif
+  13          #endif
+  14          /*-----------------------------------可选模块设定----------------------------------*/
+  15          union{
+  16              u32 num32;
+  17              u16 num16[2];
+  18              u8  num8[4];
+  19          }fast_cout;
+  20          /*-------------------------------------------------------
+  21          毫秒级延时函数
+  22          -------------------------------------------------------*/
+  23          void delay_ms(u16 ms){
+  24   1          u16 i;
+  25   1          if(ms){
+  26   2              do{
+  27   3                  i=ECBM_SYSCLK_SETTING/10000;
+  28   3                  while(--i);
+  29   3              }while(--ms);    
+  30   2          }
+  31   1      }
+  32          /*-------------------------------------------------------
+  33          微秒级延时函数（节拍）
+  34          -------------------------------------------------------*/
+  35          void delay_us(u16 us){
+  36   1          u16 i;
+  37   1          i=us;
+  38   1              do{}while(--i);
+  39   1      }
+  40          /*-------------------------------------------------------
+  41          微秒级延时函数的节拍计算函数
+  42          -------------------------------------------------------*/
+  43          u16 delay_set_us(u16 us){
+  44   1      //公式计算所花的时间太长，拆分成两个函数。先用这个函数推算出延时的数值，再用下面的函数调用。
+  45   1          fast_cout.num32=((u32)(ECBM_SYSCLK_SETTING/10000)*(u32)(us))*131;
+  46   1          return fast_cout.num16[0]>>1;
+  47   1      }
+  48          /************************************串口调试模块***************/#if ((ECBM_AUTO_DOWNLOAD_EN)&&(ECBM_UART_
+             -LIB_EN))
+  49          /*-------------------------------------------------------
+  50          自动下载所需的变量 
+  51          -------------------------------------------------------*/
+  52          bit auto_download_en;            //自动下载的使能
+  53          u8 data auto_download_old_char;  //保存上一次接收的数据
+C51 COMPILER V9.01   ECBM_CORE                                                             07/18/2022 16:31:18 PAGE 2   
+
+  54          u8 data auto_download_char_count;//相同数据计数
+  55          /*-------------------------------------------------------
+  56          下载流判断函数
+  57          -------------------------------------------------------*/
+  58          void system_uart_reset(){
+  59   1          if(auto_download_old_char!=UART1_GET_REG_SBUF){ //判断重复字符，如果字符不重复
+  60   2              auto_download_old_char=UART1_GET_REG_SBUF;  //就更新oldchar
+  61   2              auto_download_char_count=0;                 //计数器清零
+  62   2          }else{                                          //如果字符重复
+  63   2              if(auto_download_en)auto_download_char_count++;//则重复计数器+1
+  64   2          }
+  65   1          if(auto_download_char_count>=233){              //接收到233个重复数据时
+  66   2              EA_DISABLE;                                 //断开所有中断
+  67   2              while(1)POWER_RESET;                        //一直尝试重启
+  68   2          }
+  69   1      }
+  70          /****************************************************************************/#endif
+  71          /*-------------------------------------------------------
+  72          系统检查函数
+  73          -------------------------------------------------------*/
+  74          #if ((ECBM_MCU_CHECK_EN)&&(ECBM_UART_PRINTF_EN)&&(ECBM_UART_LIB_EN)&&(ECBM_UART1_EN))
+              void system_check(){
+                  u8 i,j;    
+                  u16 aaa=0x1234;
+              #if         (ECBM_MCU&0xF00000)==0x100000
+              #   define      ECBM_MCU_NAME   "STC8F"
+              #elif       (ECBM_MCU&0xF00000)==0x200000
+              #   define      ECBM_MCU_NAME   "STC8A"
+              #elif       (ECBM_MCU&0xF00000)==0x300000
+              #   define      ECBM_MCU_NAME   "STC8G"
+              #elif       (ECBM_MCU&0xF00000)==0x400000
+              #   define      ECBM_MCU_NAME   "STC8H"
+              #elif       (ECBM_MCU&0xF00000)==0x500000
+              #   define      ECBM_MCU_NAME   "STC8C"
+              #endif
+                  uart_printf(1,"ECBM V%bu.%bu.%bu on %s",ECBM_FVN,ECBM_RVN,ECBM_BVN,ECBM_MCU_NAME);//输出版本号和单片机
+             -型号
+                  uart_printf(1,"%uK",(u16)((ECBM_MCU&0x0F0000)>>16));
+                  uart_printf(1,"%02u",(u16)(ECBM_MCU_ROM_SIZE));
+              #if     ECBM_MCU    ==    0x110301
+                  uart_printf(1,"-8PIN");
+              #elif   ECBM_MCU    ==    0x110302
+                  uart_printf(1,"S2-16PIN/20PIN");
+              #elif   ECBM_MCU    ==    0x120502
+                  uart_printf(1,"S2");
+              #elif   ECBM_MCU    ==    0x120504
+                  uart_printf(1,"S4");
+              #elif   ECBM_MCU    ==    0x2405C2
+                  uart_printf(1,"S2A12");
+              #elif   ECBM_MCU    ==    0x2815C4
+                  uart_printf(1,"D4");
+              #elif   ECBM_MCU    ==    0x2805C4
+                  uart_printf(1,"S4A12");
+              #elif   ECBM_MCU    ==    0x3103A2
+                  uart_printf(1,"-16PIN/20PIN");
+              #elif   ECBM_MCU    ==    0x310201
+                  uart_printf(1,"-8PIN ");
+              #elif   ECBM_MCU    ==    0x3102A1
+                  uart_printf(1,"A-8PIN");
+              #elif   ECBM_MCU    ==    0x3103A1
+                  uart_printf(1,"T-20PIN");
+              #elif   ECBM_MCU    ==    0x3205A2
+C51 COMPILER V9.01   ECBM_CORE                                                             07/18/2022 16:31:18 PAGE 3   
+
+                  uart_printf(1,"S2");
+              #elif   ECBM_MCU    ==    0x3205A4
+                  uart_printf(1,"S4");
+              #elif   ECBM_MCU    ==    0x4103A2
+                  uart_printf(1,"-20PIN");
+              #elif   ECBM_MCU    ==    0x4105A2
+                  uart_printf(1,"-32PIN");    
+              #elif   ECBM_MCU    ==    0x4305C2
+                  uart_printf(1,"S2");    
+              #elif   ECBM_MCU    ==    0x4305C4
+                  uart_printf(1,"S4");
+              #elif   ECBM_MCU    ==    0x4805C4
+                  uart_printf(1,"U");    
+              #elif   ECBM_MCU    ==    0x520502
+                  uart_printf(1,"S2");    
+              #elif   ECBM_MCU    ==    0x520504
+                  uart_printf(1,"S4");
+              #endif
+                  j=0;
+                  uart_printf(1,"\r\nChecking MCU ID");
+                  for(i=0;i<7;i++){
+                      uart_printf(1,".");
+                      if((REG_ID(i))==(MCUID[i])){
+                          j++;
+                      }
+                  }
+                  if(j!=7){
+                      uart_printf(1,"Error\r\nPlease check the setting of the MCU model\r\n");
+                  }else{
+                      uart_printf(1,"OK\r\nID    :");for(i=0;i<7;i++){uart_printf(1,"%02X",(u16)(MCUID[i]));}uart_printf
+             -(1,"\r\n");        //输出唯一ID号
+                      uart_printf(1,"DATA  :128\tByte\r\n");//DATA区固定是128Byte
+                      uart_printf(1,"IDATA :128\tByte\r\n");//IDATA区固定是128Byte
+                      uart_printf(1,"XDATA :%u\tByte\r\n",(u16)((ECBM_MCU&0x0F0000)>>16)*1024);//从配置文件中获取XDATA区
+             -大小
+                      uart_printf(1,"FLASH :%lu\tByte\r\n",(u32)ECBM_MCU_ROM_SIZE*1024);//从配置文件中获取FLASH区大小
+                      uart_printf(1,"SYSCLK:%lu\tHz\r\n",ECBM_SYSCLK_SETTING);//输出内部晶振值，在图形界面上设置
+                      uart_printf(1,"BGV   :%u\tmV\r\n",REG_BGV);//输出内部电压基准值，需要在STC-ISP上设置
+                      uart_printf(1,"ENDIAN:");
+                      if(*((char*)(&aaa))==0x12)uart_printf(1,"big\tendian\r\n");
+                      if(*((char*)(&aaa))==0x34)uart_printf(1,"little\tendian\r\n");
+                  }    
+              }
+              #endif
+ 157          /*----------------------------------其他系统函数-----------------------------------*/
+ 158          #define SYS_HSI_S 0 //内部高速时钟HSI(标准)
+ 159          #define SYS_HSI_C 1 //内部高速时钟HSI(自定义)
+ 160          #define SYS_LSI   2 //内部低速时钟LSI
+ 161          #define SYS_LSE   3 //外部低速时钟LSI
+ 162          #define SYS_HSE_A 4 //外部有源晶振
+ 163          #define SYS_HSE_P 5 //外部无源晶振
+ 164          void system_set_clock(u8 source){
+ 165   1          switch(source){
+ 166   2              case SYS_HSI_S:
+ 167   2              case SYS_HSI_C:{
+ 168   3                  CLK_HSI_POWER_ON;   //使能HSI，即内部24M的IRC。
+ 169   3                  CLK_SET_SOURCE_HSI; //切换到HSI。
+ 170   3                  CLK_HSE_POWER_OFF;  //关闭其他时钟源，省电。
+ 171   3                  CLK_LSE_POWER_OFF;  //关闭其他时钟源，省电。
+ 172   3                  CLK_LSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 173   3              }break;
+ 174   2              case SYS_LSI:{
+C51 COMPILER V9.01   ECBM_CORE                                                             07/18/2022 16:31:18 PAGE 4   
+
+ 175   3                  CLK_LSI_POWER_ON;   //使能LSI，即内部32K的IRC。
+ 176   3                  CLK_SET_SOURCE_LSI; //切换到LSI。
+ 177   3                  CLK_HSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 178   3                  CLK_LSE_POWER_OFF;  //关闭其他时钟源，省电。
+ 179   3                  CLK_HSE_POWER_OFF;  //关闭其他时钟源，省电。
+ 180   3              }break;
+ 181   2              case SYS_LSE:{
+ 182   3                  CLK_LSE_POWER_ON;   //使能LSE，即外部低速晶振。
+ 183   3                  CLK_SET_SOURCE_LSE; //切换到LSE。
+ 184   3                  CLK_LSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 185   3                  CLK_HSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 186   3                  CLK_HSE_POWER_OFF;  //关闭其他时钟源，省电。
+ 187   3              }break;
+ 188   2              case SYS_HSE_A:{
+ 189   3                  CLK_HSE_A_POWER_ON; //使能HSE（有源晶振）。
+ 190   3                  CLK_SET_SOURCE_HSE; //切换到HSE。
+ 191   3                  CLK_HSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 192   3                  CLK_LSE_POWER_OFF;  //关闭其他时钟源，省电。
+ 193   3                  CLK_LSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 194   3              }break;
+ 195   2              case SYS_HSE_P:{
+ 196   3                  CLK_HSE_P_POWER_ON; //使能HSE（无源晶振）。
+ 197   3                  CLK_SET_SOURCE_HSE; //切换到HSE。
+ 198   3                  CLK_HSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 199   3                  CLK_LSE_POWER_OFF;  //关闭其他时钟源，省电。
+ 200   3                  CLK_LSI_POWER_OFF;  //关闭其他时钟源，省电。
+ 201   3              }break;
+ 202   2          }
+ 203   1      }
+ 204          void system_set_div(u8 div){
+ 205   1          if(div==0){                 //排除掉0这个不稳定选项。
+ 206   2              CLK_SET_REG_CLKDIV(1);  //如果输入0的话就改成1。
+ 207   2          }else{
+ 208   2              CLK_SET_REG_CLKDIV(div);//如果不是0，就直接写入寄存器。
+ 209   2          }
+ 210   1      }
+ 211          /*-------------------------------------------------------
+ 212          库函数系统初始化函数
+ 213          -------------------------------------------------------*/
+ 214          void system_init(void){
+ 215   1          EX_SFR_ENABLE;//打开额外的寄存器。
+ 216   1      //---------------自动下载--------------//
+ 217   1      #if ((ECBM_AUTO_DOWNLOAD_EN)&&(ECBM_UART_LIB_EN))//判断否需要开启自动下载。
+ 218   1          auto_download_en=1;         //打开自动下载使能
+ 219   1          auto_download_old_char=0;   //初始化串口相关变量
+ 220   1          auto_download_char_count=0; //初始化串口相关变量
+ 221   1          uart_init();
+ 222   1      #endif
+ 223   1      //-------------基本硬件设置------------//
+ 224   1      #if (ECBM_POWER_LIB_EN)&&(ECBM_POWER_RST_CFG_EN)
+ 225   1          power_rstcfg_init();
+ 226   1      #endif    
+ 227   1      //-------------时钟输出设置------------//    
+ 228   1      #if ECBM_SYSCLK_OUT_EN //判断是否需要开启时钟输出。
+              #   if ((ECBM_MCU&0xF00000)>0x200000)//检查是不是GH。
+              #       if ECBM_SYSLCK_OUT_PIN
+                          CLK_SET_OUT_TO_P16_GH;
+              #       else
+                          CLK_SET_OUT_TO_P54_GH;
+              #       endif
+                      CLK_OUT_SET_DIV_GH(ECBM_SYSCLK_OUT_SETTING_GH);
+              #   else
+C51 COMPILER V9.01   ECBM_CORE                                                             07/18/2022 16:31:18 PAGE 5   
+
+              #       if ECBM_SYSLCK_OUT_PIN
+                          CLK_SET_OUT_TO_P16_FA;
+              #       else
+                          CLK_SET_OUT_TO_P54_FA;
+              #       endif
+                      CLK_OUT_SET_DIV_FA(ECBM_SYSCLK_OUT_SETTING_FA);
+              #   endif
+              #endif
+ 245   1      //--------------设置确认---------------//
+ 246   1          EA_ENABLE;//打开总中断。
+ 247   1      #if ((ECBM_MCU_CHECK_EN)&&(ECBM_UART_PRINTF_EN)&&(ECBM_UART_LIB_EN)&&(ECBM_UART1_EN))
+                  delay_ms(500);
+                  system_check();
+              #endif
+ 251   1      }
+ 252          /*---------------------------------其他非系统函数---------------------------------*/
+ 253          /**********************************str系列函数************************/#if ECBM_STRING_EN
+ 254          /*-------------------------------------------------------
+ 255          字符串查找函数。
+ 256          -------------------------------------------------------*/
+ 257          u16 str_find(char * dest,char * key){
+ 258   1          u16 key_count=0,key_first=0,count=0;
+ 259   1          while(*dest){    //判断目标字符串。
+ 260   2              if(key[key_count]==(*dest)){//假如关键词字符串当前位比对成功，
+ 261   3                  key_count++;            //那么就比较下一位。
+ 262   3              }else if(key[0]==(*dest)){      //假如当前位没有对比成功，就看看是不是要从头开始对比。
+ 263   3                              key_count=1;                    //从头对比成功，说明再次找到了疑似的关键词，那么下次就从第二个开始对比。
+ 264   3              }else{                      //假如没有比对成功，
+ 265   3                  key_count=0;            //那么就从头开始比对。
+ 266   3              }
+ 267   2                      count++;                                //记录循环的次数，用于计算关键词出现的位置。
+ 268   2              dest++;                     //读取目标字符串的下一位。
+ 269   2              if(key[key_count]==0){      //如果关键词字符串比对完，
+ 270   3                  return (count-key_count);//返回关键词字符串第一次出现的位置。
+ 271   3              } 
+ 272   2          }
+ 273   1          return 0xffff;//能运行到这一步，说明直到目标字符串结束都没有比对成功，返回-1。
+ 274   1      }
+ 275          /*-------------------------------------------------------
+ 276          IO信息读取函数。
+ 277          -------------------------------------------------------*/
+ 278          u8 str_read_pin(char * str,u16 pos){
+ 279   1          u8  dat=0,offset,count; //从左往右依次是读取的信息、字符串偏移和字数统计。
+ 280   1          count=0;                //字数统计清零。
+ 281   1          for(offset=0;offset<10;offset++){//预留10个偏移量。
+ 282   2              if((str[pos+offset]>='0')&&(str[pos+offset]<='7')){//IO口的编号都是从0~7。
+ 283   3                  count++;                            //在这个范围内，字数+1。
+ 284   3                  if(count==1){                       //如果是第一个数，
+ 285   4                      dat=(str[pos+offset]-'0')<<4;   //解析出来放到高4位。
+ 286   4                  }
+ 287   3                  if(count==2){                       //如果是第二个数，
+ 288   4                      dat=(str[pos+offset]-'0')|dat;  //解析出来放到低4位。
+ 289   4                      return dat;                     //返回该值。
+ 290   4                  }
+ 291   3              }
+ 292   2              if((str[pos+offset]>='8')&&(str[pos+offset]<='9')){//如果是8和9，那么只增加字数，不写入值。
+ 293   3                  count++;
+ 294   3              }
+ 295   2              if(str[pos+offset]==',')break;//遇到逗号就退出。
+ 296   2              if(str[pos+offset]==0)break;  //字符串结束也退出。
+ 297   2          }
+ 298   1          return dat;
+C51 COMPILER V9.01   ECBM_CORE                                                             07/18/2022 16:31:18 PAGE 6   
+
+ 299   1      }
+ 300          /*-------------------------------------------------------
+ 301          u16变量读取函数。
+ 302          -------------------------------------------------------*/
+ 303          u16 str_read_u16(char * str,u16 pos){
+ 304   1          u16 dat=0; //读取的信息。
+ 305   1          u8  offset;//字符串偏移。
+ 306   1          for(offset=0;offset<20;offset++){//预留20个字符的偏移。
+ 307   2              if((str[pos+offset]>='0')&&(str[pos+offset]<='9')){//数字都是从0~9。
+ 308   3                  dat*=10;                  //变量增加一位，即原来是12，就变成120，空出的个数就拿来装新的数。
+ 309   3                  dat+=str[pos+offset]-'0'; //将新的数加到个位上。
+ 310   3              }
+ 311   2              if(str[pos+offset]==',')break;//遇到逗号就退出。
+ 312   2              if(str[pos+offset]=='.')break;//遇到点号就退出。
+ 313   2              if(str[pos+offset]==0)break;  //字符串结束也退出。
+ 314   2          }
+ 315   1          return dat;
+ 316   1      }
+ 317          /*-------------------------------------------------------
+ 318          字符串推出指令函数（带字符串长度参数版）。
+ 319          -------------------------------------------------------*/
+ 320          u8 str_push_len(u8 * dest,u16 dlen,u8 * key,u16 klen){
+ 321   1          u16 i,j=0,start=0,stop=0;
+ 322   1          for(i=0;i<dlen;i++){        //从头开始，直到指定的长度。
+ 323   2              if(dest[i]==key[j]){    //把当前的字符和关键词比较成功，
+ 324   3                  j++;                //取关键词的下一个字。
+ 325   3                  if(j==klen){        //当关键词全部比对完成的时候。
+ 326   4                      stop=i;            //保存【结束位置】。
+ 327   4                      break;            //退出循环。
+ 328   4                  }
+ 329   3              }else{                    //如果当前的字符和关键词比较失败，
+ 330   3                  j=0;                //下一次从头开始比对。
+ 331   3                  start=i+1;            //更新【开始位置】为下一位（因为当前位失败了）。
+ 332   3              }
+ 333   2          }
+ 334   1          if(start<=stop){            //当比对成功的时候，【开始位置】肯定小于等于【结束位置】。
+ 335   2              for(i=start;i<stop;i++){//将从【开始位置】到【结束位置】之间的缓存全清零。
+ 336   3                  dest[i]=0;
+ 337   3              }
+ 338   2              return 1;                //返回推出成功。
+ 339   2          }else{
+ 340   2              return 0;                //返回推出失败。
+ 341   2          }
+ 342   1      }
+ 343          /*****************************************************************************/#endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1171    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      4      36
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

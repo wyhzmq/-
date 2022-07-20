@@ -1,0 +1,1 @@
+"ECBM_LIB\power.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\power.lst) OBJECT(.\output\power.obj)

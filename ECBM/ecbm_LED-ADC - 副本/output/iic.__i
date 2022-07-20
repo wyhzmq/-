@@ -1,0 +1,1 @@
+"ECBM_LIB\iic.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\iic.lst) OBJECT(.\output\iic.obj)

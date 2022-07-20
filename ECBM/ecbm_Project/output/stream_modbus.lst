@@ -1,0 +1,524 @@
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE STREAM_MODBUS
+OBJECT MODULE PLACED IN .\output\stream_modbus.obj
+COMPILER INVOKED BY: D:\Paths\Keil_v5\C51\BIN\C51.EXE device\stream_modbus.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\ECB
+                    -M_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\stream_modbus.lst) OBJECT(.\output\stream_modbus.obj)
+
+line level    source
+
+   1          #include "stream_modbus.h"//¼ÓÔØÍ·ÎÄ¼þ
+   2          #if (ECBM_STREAM_EN)&&(ECBM_STREAM_MODBUS_EN)//¼ì²é±¾¿âÓÐÃ»ÓÐ±»Ê¹ÄÜ
+              /*--------------------------------------±äÁ¿¶¨Òå-----------------------------------*/
+              u8  es_modbus_rtu_status      =0; //×´Ì¬»úÊ¹ÓÃµÄ±äÁ¿¡£
+              u8  es_modbus_rtu_broadcast_en=0; //¹ã²¥Ä£Ê½¡£
+              u8  es_modbus_rtu_fun_code    =0; //¹¦ÄÜÂë¡£
+              u8  es_modbus_rtu_fun_err_num =0; //Òì³£Âë¡£
+              u16 es_modbus_rtu_address     =0; //Êý¾ÝµØÖ·¡£
+              u16 es_modbus_rtu_data_count  =0; //Êý¾Ý/¸öÊý¡£
+              u16 es_modbus_rtu_uart_crc    =0; //CRC¼ÆËã»º´æ¡£
+              u16 es_modbus_rtu_crc_buf     =0; //CRC»º´æ¡£
+              u8  es_modbus_rtu_cmd_count   =0; //Ö¸Áî»º´æ¼ÆÊý¡£
+              #if ES_MODBUS_RTU_CMD10_EN
+              u16 es_modbus_rtu_cmd_buf[ES_MODBUS_RTU_BUF_SIZE];//Ö¸Áî»º´æ¡£
+              #endif
+              /*--------------------------------------³ÌÐò¶¨Òå-----------------------------------*/
+              void es_modbus_rtu_crc16(u8 buf,u16 * crc){
+                  u8 j;
+                  u16 crc_buf;
+                  crc_buf=*crc;
+                  crc_buf^=buf;                       //µ±Ç°Êý¾ÝÒì»òCRCµÍ×Ö½Ú£¬ÔÚC51Àï¿ÉÒÔÖ±½Ó´¦Àí¡£
+                  for(j=0;j<8;j++){                   //¼ÆËãÃ¿¸ö×Ö½ÚµÄÃ¿Ò»Î»¡£
+                      if(crc_buf&0x01){               //ÅÐ¶ÏÓÒÒÆÇ°×îµÍÎ»ÊÇ·ñÎª1¡£
+                          crc_buf=(crc_buf>>1)^0xA001;//Èç¹ûÎª1ÔòÓÒÒÆ²¢Òì»ò±í´ïÊ½¡£
+                      }else{
+                          crc_buf>>=1;                //·ñÔòÖ±½ÓÓÒÒÆÒ»Î»¡£
+                      }           
+                  }
+                  *crc=crc_buf;
+              }
+              void es_modbus_rtu_err_num(u8 fun_num,u8 err_num){
+                  u8  id;
+                  u16 crc=0xFFFF;
+                  if(es_modbus_rtu_broadcast_en){     //Ö»ÓÐ²»ÊÇ¹ã²¥Ö¡µÄÊ±ºò²ÅÄÜ»Ø¸´¡£
+                      id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                      es_modbus_rtu_crc16(id          ,&crc); //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                      es_modbus_rtu_crc16(0x80+fun_num,&crc);
+                      es_modbus_rtu_crc16(err_num     ,&crc);
+                      uart_char(ECBM_STREAM_UART,id);            //·¢ËÍµØÖ·¡£
+                      uart_char(ECBM_STREAM_UART,0x80+fun_num);  //·¢ËÍ0x80+¹¦ÄÜÂë»Ø¸´¡£
+                      uart_char(ECBM_STREAM_UART,err_num);       //Òì³£Âë¡£
+                      uart_char(ECBM_STREAM_UART,(u8)(crc));   //·¢ËÍCRC¡£
+                      uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                  }
+              }
+              /*-------------------------------------------------------
+              1ºÅ¹¦ÄÜÂë´¦Àíº¯Êý¡£
+              -------------------------------------------------------*/
+              #if ES_MODBUS_RTU_CMD01_EN
+              void es_modbus_rtu_cmd_0x01(void){
+                  u8 temp8,t1,c1,i,j,qw,id;
+                  u16 crc=0xFFFF;
+                  id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                  if((es_modbus_rtu_data_count>=1)&&(es_modbus_rtu_data_count<=0x07D0)){          //¶ÁÈ¡µÄ¸öÊýÒªÔÚ1¸öÒÔÉ
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 2   
+
+             -Ï£¬ÇÒµØÖ·²»ÄÜ´óÓÚ2000¡£
+                      if(((u32)es_modbus_rtu_data_count+(u32)es_modbus_rtu_address)<=65536UL){//ÅÐ¶ÏµØÖ·+¸öÊýÓÐÃ»ÓÐ³¬ÏÞ¡
+             -£
+                          if(es_modbus_rtu_broadcast_en){             //Èç¹ûÊÇ¹ã²¥Ö¡£¬ÄÇÃ´±ã²»ÄÜ»Ø¸´¡£
+                              t1=(u8)(es_modbus_rtu_data_count/8);  //Í³¼ÆÒª¶ÁÈ¡µÄÊý¾ÝÄÜ´Õ¹»¶àÉÙ¸ö×Ö½Ú¡£
+                              if(es_modbus_rtu_data_count%8)t1++;     //Ê£ÏÂµÄ²»×ã8Î»µÄÊý¾ÝÒ²ÒªÒ»¸ö×Ö½ÚÀ´´«Êä¡£
+                              es_modbus_rtu_crc16(id  ,&crc);  //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                              es_modbus_rtu_crc16(0x01,&crc);
+                              es_modbus_rtu_crc16(t1  ,&crc);
+                              uart_char(ECBM_STREAM_UART,id);    //·¢ËÍµØÖ·¡£
+                              uart_char(ECBM_STREAM_UART,0x01);  //·¢ËÍ¹¦ÄÜÂë»Ø¸´¡£
+                              uart_char(ECBM_STREAM_UART,t1);    //·¢ËÍÊý¾Ý³¤¶È¡£
+                              for(i=0;i<t1;i++){                          //´ÓÆðÊ¼Î»ÖÃ¿ªÊ¼×é×°Êý¾Ý¡£
+                                  temp8=0;                                //ÇåÁã±äÁ¿¡£
+                                  if(es_modbus_rtu_data_count>=8){        //Èç¹ûÊ£ÓàÒª¶ÁµÄÊý¾Ý¶àÓÚ8¸ö±ÈÌØ¡£
+                                      c1=8;                               //ÄÇÃ´±¾ÂÖÑ­»·ÏÈ¶Á8±ÈÌØÊý¾Ý¡£
+                                  }else{                                  //·ñÔò£¬
+                                      c1=(u8)es_modbus_rtu_data_count;  //¾ÍÓÐ¶àÉÙ¶Á¶àÉÙ¡£
+                                  }
+                                  for(j=0;j<c1;j++){      
+                                      es_modbus_cmd_read_bit(es_modbus_rtu_address++,&qw);//½«µØÖ·ËÍµ½¶ÁÈ¡º¯ÊýÖÐ£¬»ñÈ¡¶Ô
+             -Ó¦µÄ±ÈÌØÖµ¡£
+                                      if(qw)temp8|=(1<<j);                //×é×°Êý¾Ý¡£
+                                  }
+                                  es_modbus_rtu_crc16(temp8,&crc);        //¼ÆËãCRC¡£
+                                  uart_char(ECBM_STREAM_UART,temp8);                 //·¢ËÍ×é×°ºÃµÄÊý¾Ý¡£
+                                  es_modbus_rtu_data_count-=(u16)c1;    //¼ÆËãÊ£ÏÂÒª¶ÁµÄÊý¾Ý¸öÊý¡£
+                              }
+                              uart_char(ECBM_STREAM_UART,(u8)(crc));               //·¢ËÍCRC
+                              uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                          }
+                      }else{                                  //Èç¹ûµØÖ·+¸öÊý³¬¹ý65536¡£
+                          es_modbus_rtu_fun_err_num=0x02;     //¼ÇÂ¼Òì³£Âë02¡£
+                          es_modbus_rtu_err_num(0x01,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                      }
+                  }else{                                  //Èç¹û¸öÊý±¾Éí¾Í³¬¹ý2000ÁË¡£
+                      es_modbus_rtu_fun_err_num=0x03;     //¼ÇÂ¼Òì³£Âë03¡£
+                      es_modbus_rtu_err_num(0x01,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                  }
+              }
+              #endif
+              /*-------------------------------------------------------
+              2ºÅ¹¦ÄÜÂë´¦Àíº¯Êý¡£
+              -------------------------------------------------------*/
+              #if ES_MODBUS_RTU_CMD02_EN
+              void es_modbus_rtu_cmd_0x02(void){
+                  u8 temp8,t1,c1,i,j,qw,id;
+                  u16 crc=0xFFFF;
+                  id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                  if((es_modbus_rtu_data_count>=1)&&(es_modbus_rtu_data_count<=0x07D0)){              //¶ÁÈ¡µÄ¸öÊýÒªÔÚ1¸
+             -öÒÔÉÏ£¬ÇÒµØÖ·²»ÄÜ´óÓÚ2000¡£
+                      if(((u32)es_modbus_rtu_data_count+(u32)es_modbus_rtu_address)<=65536UL){    //ÅÐ¶ÏµØÖ·+¸öÊýÓÐÃ»ÓÐ³
+             -¬ÏÞ¡£
+                              if(es_modbus_rtu_broadcast_en){             //Èç¹ûÊÇ¹ã²¥Ö¡£¬ÄÇÃ´±ã²»ÄÜ»Ø¸´¡£
+                                  t1=(u8)(es_modbus_rtu_data_count/8);  //Í³¼ÆÒª¶ÁÈ¡µÄÊý¾ÝÄÜ´Õ¹»¶àÉÙ¸ö×Ö½Ú¡£
+                                  if(es_modbus_rtu_data_count%8)t1++;     //Ê£ÏÂµÄ²»×ã8Î»µÄÊý¾ÝÒ²ÒªÒ»¸ö×Ö½ÚÀ´´«Êä¡£
+                                  es_modbus_rtu_crc16(id  ,&crc);         //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                                  es_modbus_rtu_crc16(0x02,&crc);
+                                  es_modbus_rtu_crc16(t1  ,&crc);
+                                  uart_char(ECBM_STREAM_UART,id);                    //·¢ËÍµØÖ·¡£
+                                  uart_char(ECBM_STREAM_UART,0x02);                  //·¢ËÍ¹¦ÄÜÂë»Ø¸´¡£
+                                  uart_char(ECBM_STREAM_UART,t1);                    //·¢ËÍÊý¾Ý³¤¶È¡£
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 3   
+
+                                  for(i=0;i<t1;i++){                      //´ÓÆðÊ¼Î»ÖÃ¿ªÊ¼×é×°Êý¾Ý¡£
+                                      temp8=0;                            //ÇåÁã±äÁ¿¡£
+                                      if(es_modbus_rtu_data_count>=8){    //Èç¹ûÊ£ÓàÒª¶ÁµÄÊý¾Ý¶àÓÚ8¸ö±ÈÌØ¡£
+                                          c1=8;                           //ÄÇÃ´±¾ÂÖÑ­»·ÏÈ¶Á8±ÈÌØÊý¾Ý¡£
+                                      }else{                              //·ñÔò£¬
+                                          c1=(u8)es_modbus_rtu_data_count;  //¾ÍÓÐ¶àÉÙ¶Á¶àÉÙ¡£
+                                      }
+                                      for(j=0;j<c1;j++){      
+                                          es_modbus_cmd_read_io_bit(es_modbus_rtu_address++,&qw);//½«µØÖ·ËÍµ½¶ÁÈ¡º¯ÊýÖÐ£
+             -¬»ñÈ¡¶ÔÓ¦µÄ±ÈÌØÖµ¡£
+                                          if(qw)temp8|=(1<<j);                     //×é×°Êý¾Ý¡£
+                                      }
+                                      es_modbus_rtu_crc16(temp8,&crc);        //¼ÆËãCRC¡£
+                                      uart_char(ECBM_STREAM_UART,temp8);                 //·¢ËÍ×é×°ºÃµÄÊý¾Ý¡£
+                                      es_modbus_rtu_data_count-=(u16)c1;    //¼ÆËãÊ£ÏÂÒª¶ÁµÄÊý¾Ý¸öÊý¡£
+                                  }
+                                  uart_char(ECBM_STREAM_UART,(u8)(crc));               //·¢ËÍCRC¡£
+                                  uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                              }
+                      }else{                                  //Èç¹ûµØÖ·+¸öÊý³¬¹ý2000¡£
+                          es_modbus_rtu_fun_err_num=0x02;     //¼ÇÂ¼Òì³£Âë02¡£
+                          es_modbus_rtu_err_num(0x02,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                      }
+                  }else{                                  //Èç¹û¸öÊý±¾Éí¾Í³¬¹ý65536ÁË¡£
+                      es_modbus_rtu_fun_err_num=0x03;     //¼ÇÂ¼Òì³£Âë03¡£
+                      es_modbus_rtu_err_num(0x02,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                  }
+              }
+              #endif
+              /*-------------------------------------------------------
+              3ºÅ¹¦ÄÜÂë´¦Àíº¯Êý¡£
+              -------------------------------------------------------*/
+              #if ES_MODBUS_RTU_CMD03_EN
+              void es_modbus_rtu_cmd_0x03(void){
+                  u8 id;
+                  u16 temp16,i,crc=0xffff;
+                  id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                  if((es_modbus_rtu_data_count>=1)&&(es_modbus_rtu_data_count<=0x007D)){          //¶ÁÈ¡µÄ¸öÊýÒªÔÚ1¸öÒÔÉ
+             -Ï£¬ÇÒµØÖ·²»ÄÜ´óÓÚ125¡£
+                      if(((u32)es_modbus_rtu_data_count+(u32)es_modbus_rtu_address)<65536UL){ //ÅÐ¶ÏµØÖ·+¸öÊýÓÐÃ»ÓÐ³¬ÏÞ¡
+             -£
+                          if(es_modbus_rtu_broadcast_en){
+                              es_modbus_rtu_crc16(id  ,&crc);  //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                              es_modbus_rtu_crc16(0x03,&crc);
+                              es_modbus_rtu_crc16(es_modbus_rtu_data_count*2,&crc);
+                              uart_char(ECBM_STREAM_UART,id);            //·¢ËÍµØÖ·¡£
+                              uart_char(ECBM_STREAM_UART,0x03);          //·¢ËÍ¹¦ÄÜÂë»Ø¸´¡£
+                              uart_char(ECBM_STREAM_UART,es_modbus_rtu_data_count*2);//·¢ËÍ»Ø¸´×Ö½ÚÊý¡£
+                              for(i=0;i<es_modbus_rtu_data_count;i++){
+                                  es_modbus_cmd_read_reg(es_modbus_rtu_address+i,&temp16);//´Ó¼Ä´æÆ÷±äÁ¿Àï°ÑÊý¾ÝÈ¡³öÀ´¡£
+                                  es_modbus_rtu_crc16((u8)(temp16>>8),&crc);            //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                                  es_modbus_rtu_crc16((u8)(temp16),&crc);
+                                  uart_char(ECBM_STREAM_UART,(u8)(temp16>>8)); //·¢ËÍÊý¾Ý¡£
+                                  uart_char(ECBM_STREAM_UART,(u8)(temp16));
+                              }
+                              uart_char(ECBM_STREAM_UART,(u8)(crc));//·¢ËÍCRC¡£
+                              uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                          }
+                      }else{
+                          es_modbus_rtu_fun_err_num=0x02; //¼ÇÂ¼Òì³£Âë02¡£
+                          es_modbus_rtu_err_num(0x03,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                      }
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 4   
+
+                  }else{                              //Èç¹û¸öÊý±¾Éí¾Í³¬¹ý125ÁË¡£
+                      es_modbus_rtu_fun_err_num=0x03; //¼ÇÂ¼Òì³£Âë03¡£    
+                      es_modbus_rtu_err_num(0x03,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                  }
+              }
+              #endif
+              /*-------------------------------------------------------
+              4ºÅ¹¦ÄÜÂë´¦Àíº¯Êý¡£
+              -------------------------------------------------------*/
+              #if ES_MODBUS_RTU_CMD04_EN
+              void es_modbus_rtu_cmd_0x04(void){
+                  u8 id;
+                  u16 temp16,i,crc=0xffff;
+                  id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                  if((es_modbus_rtu_data_count>=1)&&(es_modbus_rtu_data_count<=0x007D)){          //¶ÁÈ¡µÄ¸öÊýÒªÔÚ1¸öÒÔÉ
+             -Ï£¬ÇÒµØÖ·²»ÄÜ´óÓÚ125¡£
+                      if(((u32)es_modbus_rtu_data_count+(u32)es_modbus_rtu_address)<65536UL){ //ÅÐ¶ÏµØÖ·+¸öÊýÓÐÃ»ÓÐ³¬ÏÞ¡
+             -£
+                          if(es_modbus_rtu_broadcast_en){
+                              es_modbus_rtu_crc16(id  ,&crc);     //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                              es_modbus_rtu_crc16(0x04,&crc);
+                              es_modbus_rtu_crc16(es_modbus_rtu_data_count*2,&crc);
+                              uart_char(ECBM_STREAM_UART,id);                //·¢ËÍµØÖ·¡£
+                              uart_char(ECBM_STREAM_UART,0x04);              //·¢ËÍ¹¦ÄÜÂë»Ø¸´¡£
+                              uart_char(ECBM_STREAM_UART,es_modbus_rtu_data_count*2);//·¢ËÍ»Ø¸´×Ö½ÚÊý¡£
+                              for(i=0;i<es_modbus_rtu_data_count;i++){
+                                  es_modbus_cmd_read_io_reg(es_modbus_rtu_address+i,&temp16);//´Ó¼Ä´æÆ÷±äÁ¿Àï°ÑÊý¾ÝÈ¡³öÀ
+             -´¡£
+                                  es_modbus_rtu_crc16((u8)(temp16>>8),&crc); //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                                  es_modbus_rtu_crc16((u8)(temp16),&crc);
+                                  uart_char(ECBM_STREAM_UART,(u8)(temp16>>8));//·¢ËÍÊý¾Ý¡£
+                                  uart_char(ECBM_STREAM_UART,(u8)(temp16));
+                              }
+                              uart_char(ECBM_STREAM_UART,(u8)(crc));//·¢ËÍCRC¡£
+                              uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                          }
+                      }else{
+                          es_modbus_rtu_fun_err_num=0x02; //¼ÇÂ¼Òì³£Âë02¡£
+                          es_modbus_rtu_err_num(0x04,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                      }
+                  }else{                              //Èç¹û¸öÊý±¾Éí¾Í³¬¹ý125ÁË¡£
+                      es_modbus_rtu_fun_err_num=0x03; //¼ÇÂ¼Òì³£Âë03¡£    
+                      es_modbus_rtu_err_num(0x04,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                  }
+              }
+              #endif
+              /*-------------------------------------------------------
+              5ºÅ¹¦ÄÜÂë´¦Àíº¯Êý¡£
+              -------------------------------------------------------*/
+              #if ES_MODBUS_RTU_CMD05_EN
+              void es_modbus_rtu_cmd_0x05(void){
+                  u8 id;
+                  u16 crc=0xffff;
+                  id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                  if((es_modbus_rtu_data_count==0x0000)||(es_modbus_rtu_data_count==0xFF00)){//ÅÐ¶ÏÊä³öÖµÊÇ·ñºÏ·¨¡£
+                      es_modbus_cmd_write_bit(es_modbus_rtu_address,(u8)(es_modbus_rtu_data_count>>8));
+                      if(es_modbus_rtu_broadcast_en){
+                          es_modbus_rtu_crc16(id  ,&crc);                  //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                          es_modbus_rtu_crc16(0x05,&crc);
+                          es_modbus_rtu_crc16((u8)(es_modbus_rtu_address>>8)   ,&crc);
+                          es_modbus_rtu_crc16((u8)(es_modbus_rtu_address)      ,&crc);
+                          es_modbus_rtu_crc16((u8)(es_modbus_rtu_data_count>>8),&crc);
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 5   
+
+                          es_modbus_rtu_crc16((u8)(es_modbus_rtu_data_count)   ,&crc);
+                          uart_char(ECBM_STREAM_UART,id);               //·¢ËÍµØÖ·¡£
+                          uart_char(ECBM_STREAM_UART,0x05);                             //·¢ËÍ¹¦ÄÜÂë»Ø¸´¡£
+                          uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_address>>8)); //·¢ËÍµØÖ·»Ø¸´¡£
+                          uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_address));
+                          uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_data_count>>8));//·¢ËÍ¼ÆÊý»Ø¸´¡£
+                          uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_data_count));
+                          uart_char(ECBM_STREAM_UART,(u8)(crc));        //·¢ËÍCRC¡£
+                          uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                      }    
+                  }else{                              //Èç¹û²»ºÏ·¨¡£
+                      es_modbus_rtu_fun_err_num=0x03; //¼ÇÂ¼Òì³£Âë03¡£    
+                      es_modbus_rtu_err_num(0x05,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                  }
+              }
+              #endif
+              /*-------------------------------------------------------
+              6ºÅ¹¦ÄÜÂë´¦Àíº¯Êý¡£
+              -------------------------------------------------------*/
+              #if ES_MODBUS_RTU_CMD06_EN
+              void es_modbus_rtu_cmd_0x06(void){
+                  u8 id;
+                  u16 crc=0xffff;
+                  id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                  es_modbus_cmd_write_reg(es_modbus_rtu_address,es_modbus_rtu_data_count);//°ÑÊý¾ÝÐ´Èë¼Ä´æÆ÷¡£
+                  if(es_modbus_rtu_broadcast_en){
+                      es_modbus_rtu_crc16(id  ,&crc);          //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                      es_modbus_rtu_crc16(0x06,&crc);
+                      es_modbus_rtu_crc16((u8)(es_modbus_rtu_address>>8),&crc);
+                      es_modbus_rtu_crc16((u8)(es_modbus_rtu_address),&crc);
+                      es_modbus_rtu_crc16((u8)(es_modbus_rtu_data_count>>8),&crc);
+                      es_modbus_rtu_crc16((u8)(es_modbus_rtu_data_count),&crc);
+                      uart_char(ECBM_STREAM_UART,id);        //·¢ËÍµØÖ·¡£
+                      uart_char(ECBM_STREAM_UART,0x06);      //·¢ËÍ¹¦ÄÜÂë»Ø¸´¡£
+                      uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_address>>8));//·¢ËÍµØÖ·¡£
+                      uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_address));
+                      uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_data_count>>8));//·¢ËÍ¸öÊý¡£
+                      uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_data_count));
+                      uart_char(ECBM_STREAM_UART,(u8)(crc));//·¢ËÍCRC¡£
+                      uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                  }    
+              }
+              #endif
+              /*-------------------------------------------------------
+              16ºÅ¹¦ÄÜÂë´¦Àíº¯Êý¡£
+              -------------------------------------------------------*/
+              #if ES_MODBUS_RTU_CMD10_EN
+              void es_modbus_rtu_cmd_0x10(void){
+                  u8 i,id;
+                  u16 crc=0xffff;
+                  id=es_modbus_rtu_get_id();      //¶ÁÈ¡±¾»úID¡£
+                  if((es_modbus_rtu_data_count>=0x0001)&&(es_modbus_rtu_data_count<=0x007B)){             //ÊäÈëµÄÊý¾Ý¸ö
+             -ÊýµÃ·ûºÏÒªÇó¡£
+                      if(((u32)es_modbus_rtu_address+(u32)es_modbus_rtu_data_count)<65536UL){             //µØÖ·²»ÄÜ³¬¹ý
+             -65536¡£
+                          for(i=0;i<es_modbus_rtu_cmd_count;i++){   
+                              es_modbus_cmd_write_reg(es_modbus_rtu_address+i,es_modbus_rtu_cmd_buf[i]);  //°ÑÊý¾ÝÐ´Èë¼Ä
+             -´æÆ÷¡£
+                          }
+                          if(es_modbus_rtu_broadcast_en){
+                                  es_modbus_rtu_crc16(id,&crc);          //¼ÆËãCRC£¬ÏÂÍ¬¡£
+                                  es_modbus_rtu_crc16(0x10,&crc);
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 6   
+
+                                  es_modbus_rtu_crc16((u8)(es_modbus_rtu_address>>8)   ,&crc);
+                                  es_modbus_rtu_crc16((u8)(es_modbus_rtu_address)      ,&crc);
+                                  es_modbus_rtu_crc16((u8)(es_modbus_rtu_data_count>>8),&crc);
+                                  es_modbus_rtu_crc16((u8)(es_modbus_rtu_data_count)   ,&crc);
+                                  uart_char(ECBM_STREAM_UART,id);                    //·¢ËÍµØÖ·¡£
+                                  uart_char(ECBM_STREAM_UART,0x10);                  //·¢ËÍ¹¦ÄÜÂë»Ø¸´¡£
+                                  uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_address>>8));//·¢ËÍµØÖ·¡£
+                                  uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_address));
+                                  uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_data_count>>8));//·¢ËÍ¸öÊý¡£
+                                  uart_char(ECBM_STREAM_UART,(u8)(es_modbus_rtu_data_count));
+                                  uart_char(ECBM_STREAM_UART,(u8)(crc));           //·¢ËÍCRC¡£
+                                  uart_char(ECBM_STREAM_UART,(u8)(crc>>8));
+                          }   
+                      }else{
+                          es_modbus_rtu_fun_err_num=0x02;               //¼ÇÂ¼Òì³£Âë02¡£
+                          es_modbus_rtu_err_num(0x10,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                      }
+                  }else{                                                  //Èç¹û²»ºÏ·¨¡£
+                      es_modbus_rtu_fun_err_num=0x03;                   //¼ÇÂ¼Òì³£Âë03¡£    
+                      es_modbus_rtu_err_num(0x10,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                  }
+              }
+              #endif
+              /*-------------------------------------------------------
+              modbus_rtu½âÎöÖ´ÐÐº¯Êý¡£
+              -------------------------------------------------------*/
+              void es_modbus_rtu_exe(u8 dat){
+                  switch(es_modbus_rtu_status){
+                      case ES_MODBUS_RTU_READY:{          //¾ÍÐ÷£¬µÈ´ý½ÓÊÕÊý¾Ý¡£
+                          if((dat==es_modbus_rtu_get_id())||(dat==0)){      //Èç¹ûÊÕµ½µÄIDºÍ±¾»úµÄÆ¥Åä¡£
+                              es_modbus_rtu_status      =ES_MODBUS_RTU_FUN_NUM;//ÇÐ»»µ½¹¦ÄÜÂëÊ¶±ð
+                              es_modbus_rtu_broadcast_en=dat;     //Ð´ÈëÍ¨ÐÅÄ£Ê½£¬ÎªÁË¼ò»¯´úÂë£¬²ÉÓÃÖ±½Ó¸³Öµ¡£
+                              es_modbus_rtu_fun_code    =0;       //ÇåÁã¹¦ÄÜÂë»º´æ¡£
+                              es_modbus_rtu_fun_err_num =0;       //ÇåÁãÒì³£Âë»º´æ¡£
+                              es_modbus_rtu_uart_crc    =0xffff;  //ÖØÖÃCRC³õÖµ¡£
+                              es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);//¼ÆËãCRC¡£
+                          }
+                      }break;
+                      case ES_MODBUS_RTU_FUN_NUM:{        //ÕýÔÚ½ÓÊÕ¹¦ÄÜÂë¡£
+                          es_modbus_rtu_fun_code=dat;
+                          if(es_modbus_rtu_fun_code>127){     //ÅÐ¶Ï¹¦ÄÜÂëÊÇ·ñºÏ·¨£¬
+                              es_modbus_rtu_fun_err_num=0x01; //Òì³£Âë01¡£ 
+                              es_modbus_rtu_err_num(es_modbus_rtu_fun_code,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                              es_modbus_rtu_status=ES_MODBUS_RTU_READY;
+                          }else{                              //Èç¹ûºÏ·¨£¬
+                              switch(es_modbus_rtu_fun_code){ //ÅÐ¶ÏÊÇ²»ÊÇ±¾»úÖ§³ÖµÄ¹¦ÄÜÂë¡£
+                                  #if ES_MODBUS_RTU_CMD01_EN
+                                      case 0x01://¶ÁÏßÈ¦
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD02_EN
+                                      case 0x02://¶ÁÀëÉ¢Á¿ÊäÈë
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD05_EN
+                                      case 0x05://Ð´µ¥¸öÏßÈ¦
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD04_EN
+                                      case 0x04://¶ÁÊäÈë¼Ä´æÆ÷
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD03_EN
+                                      case 0x03://¶Á¶à¸ö¼Ä´æÆ÷
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD06_EN
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 7   
+
+                                      case 0x06://Ð´µ¥¸ö¼Ä´æÆ÷
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD10_EN
+                                      case 0x10://Ð´¶à¸ö¼Ä´æÆ÷
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD_ALL_EN
+                                      {
+                                          es_modbus_rtu_status=ES_MODBUS_RTU_ADDRH;           //Èç¹ûÊÇ´æÔÚµÄ¹¦ÄÜÂë£¬¾Í¿¼
+             -ÂÇ¿ªÊ¼½ÓÊÕÊý¾ÝÁË¡£
+                                          es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);
+                                      }break;//Ö§³ÖµÄ¹¦ÄÜÂë¾Í·µ»Ø±¾Éí¡£
+                                  #endif
+                                  default:{
+                                      es_modbus_rtu_fun_err_num=0x01;                       //Òì³£Âë01¡£
+                                      es_modbus_rtu_err_num(es_modbus_rtu_fun_code,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎó
+             -Âë¡£
+                                      es_modbus_rtu_status=ES_MODBUS_RTU_READY;
+                                  }break;//²»Ö§³ÖµÄ¹¦ÄÜÂë¾Í·µ»Ø0x80+¹¦ÄÜÂë¡£
+                              }
+                          }
+                      }break;
+                      case ES_MODBUS_RTU_ADDRH:{                        //½ÓÊÕµØÖ·µÄ¸ß8Î»¡£
+                          es_modbus_rtu_address=(u16)dat<<8;            //×é×°µØÖ·¡£
+                          es_modbus_rtu_status=ES_MODBUS_RTU_ADDRL;   //µ½ÏÂÒ»²½¡£
+                          es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);
+                      }break;
+                      case ES_MODBUS_RTU_ADDRL:{                        //½ÓÊÕµØÖ·µÄµÍ8Î»¡£
+                          es_modbus_rtu_address+=(u16)dat;              //×é×°µØÖ·¡£
+                          es_modbus_rtu_status=ES_MODBUS_RTU_DATA_COUNTH;//µ½ÏÂÒ»²½¡£
+                          es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);//¼ÆËãCRC¡£
+                      }break;
+                      case ES_MODBUS_RTU_DATA_COUNTH:{                  //½ÓÊÕÊý¾Ý/¸öÊýµÄ¸ß8Î»¡£
+                          es_modbus_rtu_data_count=(u16)dat<<8;         //×é×°Êý¾Ý/¸öÊý¡£
+                          es_modbus_rtu_status=ES_MODBUS_RTU_DATA_COUNTL;//µ½ÏÂÒ»²½¡£
+                          es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);//¼ÆËãCRC¡£
+                      }break;
+                      case ES_MODBUS_RTU_DATA_COUNTL:{                  //½ÓÊÕÊý¾Ý/¸öÊýµÄµÍ8Î»¡£
+                          es_modbus_rtu_data_count+=(u16)dat;           //×é×°Êý¾Ý/¸öÊý¡£
+                          if(es_modbus_rtu_fun_code==0x10){
+                              es_modbus_rtu_cmd_count=0;
+                              es_modbus_rtu_status=ES_MODBUS_RTU_BYTE_COUNT;//µ½×Ö½Ú¶ÁÈ¡¡£
+                          }else{
+                              es_modbus_rtu_status=ES_MODBUS_RTU_CRCL;//µ½CRC¡£
+                          }
+                          es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);//¼ÆËãCRC¡£
+                      }break;
+                      case ES_MODBUS_RTU_CRCL:{                         //½ÓÊÕCRCµÄµÍ8Î»¡£
+                          es_modbus_rtu_crc_buf=(u16)dat;               //×éºÏCRC¡£
+                          es_modbus_rtu_status=ES_MODBUS_RTU_CRCH;    //µ½ÏÂÒ»²½¡£
+                      }break;
+                      case ES_MODBUS_RTU_CRCH:{                         //½ÓÊÕCRCµÄ¸ß8Î»¡£
+                          es_modbus_rtu_crc_buf+=(u16)dat<<8;           //×éºÏCRC¡£
+                          if(es_modbus_rtu_crc_buf==es_modbus_rtu_uart_crc){//ÅÐ¶Ï½ÓÊÕµÄCRCºÍ¼ÆËãµÄCRCÊÇ·ñÏàµÈ¡£
+                              #if ES_MODBUS_RTU_CMD_ALL_EN
+                                  switch(es_modbus_rtu_fun_code){//¸ù¾Ý¹¦ÄÜÂëÀ´Ñ¡Ôñ¶ÔÓ¦µÄ¶¯×÷¡£
+                                  #if ES_MODBUS_RTU_CMD01_EN
+                                      case 0x01:es_modbus_rtu_cmd_0x01();break;
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD02_EN
+                                      case 0x02:es_modbus_rtu_cmd_0x02();break;
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD03_EN
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 8   
+
+                                      case 0x03:es_modbus_rtu_cmd_0x03();break;
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD04_EN
+                                      case 0x04:es_modbus_rtu_cmd_0x04();break;
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD05_EN
+                                      case 0x05:es_modbus_rtu_cmd_0x05();break;
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD06_EN
+                                      case 0x06:es_modbus_rtu_cmd_0x06();break;
+                                  #endif
+                                  #if ES_MODBUS_RTU_CMD10_EN
+                                      case 0x10:es_modbus_rtu_cmd_0x10();break;
+                                  #endif
+                                  }
+                              #endif
+                              es_modbus_rtu_status=ES_MODBUS_RTU_READY; 
+                          }else{                                          //·ñÔò£¬
+                              #if ES_MODBUS_RTU_CRC_ERR_EN
+                              es_modbus_rtu_crc_err_callback();//¾ÍÌøµ½CRC´íÎó½çÃæ¡£
+                              #endif
+                              es_modbus_rtu_status=ES_MODBUS_RTU_READY;
+                          }
+                      }break;
+                      #if ES_MODBUS_RTU_CMD10_EN
+                      case ES_MODBUS_RTU_BYTE_COUNT:{                   //½ÓÊÕÊý¾Ý×Ö½ÚÊý¡£
+                          es_modbus_rtu_cmd_count=dat;
+                          if((es_modbus_rtu_cmd_count==0)||(es_modbus_rtu_cmd_count!=(u8)(es_modbus_rtu_data_count*2))){
+             -//Èç¹ûÊýÁ¿²»ºÏ¡£
+                              es_modbus_rtu_fun_err_num=0x03;           //×Ö½ÚÊý¶Ô²»ÉÏ£¬Òì³£Âë03¡£
+                              es_modbus_rtu_err_num(es_modbus_rtu_fun_code,es_modbus_rtu_fun_err_num);//·¢ËÍ´íÎóÂë¡£
+                              es_modbus_rtu_status=ES_MODBUS_RTU_READY;
+                          }else{
+                              es_modbus_rtu_cmd_count=0;                    //¸´ÓÃ¸Ã±äÁ¿¡£
+                              es_modbus_rtu_status=ES_MODBUS_RTU_DATAH;//µ÷µ½¶ÔÓ¦µÄ´¦Àí½çÃæ¡£
+                              es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);//¼ÆËãCRC¡£
+                          }
+                      }break;
+                      case ES_MODBUS_RTU_DATAH:{
+                          es_modbus_rtu_cmd_buf[es_modbus_rtu_cmd_count]=((u16)dat)<<8;
+                          es_modbus_rtu_status=ES_MODBUS_RTU_DATAL;   //µ½µÍ8Î»¡£
+                          es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);//¼ÆËãCRC¡£
+                      }break;
+                      case ES_MODBUS_RTU_DATAL:{
+                          es_modbus_rtu_cmd_buf[es_modbus_rtu_cmd_count]+=((u16)dat);
+                          es_modbus_rtu_cmd_count++;
+                          if(es_modbus_rtu_cmd_count==(u8)es_modbus_rtu_data_count){
+                              es_modbus_rtu_status=ES_MODBUS_RTU_CRCL;//µ½CRC¡£
+                          }else{
+                              es_modbus_rtu_status=ES_MODBUS_RTU_DATAH;//µ½ÏÂÒ»¸öÊý¾ÝµÄ¸ß8Î»¡£
+                          }
+                          es_modbus_rtu_crc16(dat,&es_modbus_rtu_uart_crc);//¼ÆËãCRC¡£
+                      }break;
+                      #endif
+                  }
+              }
+              #endif  //ºÍ×îÉÏÃæµÄ#ifndefÅäºÏ³ÉÒ»¸ö³ÌÐò¶Î¡£
+ 467                  //ÒÔÒ»¸ö¿ÕÐÐÎª½áÎ²¡£
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+C51 COMPILER V9.01   STREAM_MODBUS                                                         07/15/2022 15:24:45 PAGE 9   
+
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
