@@ -1,0 +1,1 @@
+"device\stream.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\stream.lst) OBJECT(.\output\stream.obj)
