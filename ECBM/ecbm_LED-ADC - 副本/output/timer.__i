@@ -1,1 +1,0 @@
-"ECBM_LIB\timer.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\timer.lst) OBJECT(.\output\timer.obj)

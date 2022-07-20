@@ -1,1 +1,0 @@
-"device\stream_xmodem.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\stream_xmodem.lst) OBJECT(.\output\stream_xmodem.obj)

@@ -1,1 +1,0 @@
-"ECBM_LIB\pca.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\pca.lst) OBJECT(.\output\pca.obj)

@@ -1,1 +1,0 @@
-"ECBM_LIB\ecbm_core.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\ecbm_core.lst) OBJECT(.\output\ecbm_core.obj)

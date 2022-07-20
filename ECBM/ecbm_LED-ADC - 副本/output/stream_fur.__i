@@ -1,1 +1,0 @@
-"device\stream_fur.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\ECBM_LIB;.\device) DEBUG OBJECTEXTEND PRINT(.\output\stream_fur.lst) OBJECT(.\output\stream_fur.obj)
